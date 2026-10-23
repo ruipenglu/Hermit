@@ -39,6 +39,7 @@ def atomic_write(path, data):
 
 class Vault:
     def __init__(self, directory):
+        self.directory = Path(directory)
         self.service = "app.hermit.local." + digest(str(directory))[:24]
         self.cipher = None
 
@@ -48,6 +49,8 @@ class Vault:
         command = ["/usr/bin/security", "find-generic-password", "-a", "Hermit", "-s", self.service, "-w"]
         result = subprocess.run(command, capture_output=True, timeout=30)
         if result.returncode == 44:
+            if any(self.directory.glob("*.bin")) or ('"credential"' in (self.directory / "state.json").read_text() if (self.directory / "state.json").exists() else False):
+                raise HermitError("已存在加密数据但钥匙串密钥缺失；拒绝创建替代密钥，请恢复原钥匙串")
             key = Fernet.generate_key()
             # Feed the key over stdin so credentials never appear in process arguments.
             entry = f'add-generic-password -a Hermit -s {self.service} -w {key.decode()}\n'

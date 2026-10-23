@@ -40,10 +40,20 @@ def test_wrapper_preserves_original_scope_profile_name_and_rules():
     assert "listeners" not in config
 
 
-def test_missing_node_after_subscription_update_rejects_script():
+def test_missing_node_after_subscription_update_removes_listener_preserves_original():
     listeners, proxies = additions([mapping()], {"node-a": {}})
-    with pytest.raises(HermitError):
-        evaluate_script(compose_script("function main(c){return c;}", listeners, proxies), {"rules": ["MATCH,DIRECT"]})
+    result = evaluate_script(compose_script("function main(c){c.rules.unshift('DOMAIN,example.org,DIRECT'); return c;}", listeners, proxies), {"rules": ["MATCH,DIRECT"]})
+    assert not result.get("listeners")
+    assert result["rules"] == ["DOMAIN,example.org,DIRECT", "MATCH,DIRECT"]
+
+
+def test_missing_subscription_node_does_not_disable_other_valid_mapping():
+    items = [mapping(), dict(mapping(18081, "node-b"), id="xyz789")]
+    listeners, proxies = additions(items, {"node-a": {}, "node-b": {}})
+    result = evaluate_script(compose_script("function main(c){return c;}", listeners, proxies),
+                             {"proxies": [{"name": "node-b", "type": "vless"}], "rules": ["MATCH,DIRECT"]})
+    assert [x["port"] for x in result["listeners"]] == [18081]
+    assert result["rules"] == ["MATCH,DIRECT"]
 
 
 def test_original_failure_and_timeout_are_safe():

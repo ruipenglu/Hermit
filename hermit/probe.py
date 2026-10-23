@@ -8,6 +8,8 @@ import struct
 import time
 from urllib.parse import urlsplit
 
+import certifi
+
 from hermit import HermitError
 
 TEST_URL = "https://api.ipify.org/?format=json"
@@ -71,7 +73,7 @@ def probe(clash, port, expected, url=TEST_URL):
                 break
             time.sleep(0.05)
         result["identityConfirmed"] = expected in result["actualChain"]
-        secure = ssl.create_default_context().wrap_socket(raw, server_hostname=host)
+        secure = ssl.create_default_context(cafile=certifi.where()).wrap_socket(raw, server_hostname=host)
         path = parsed.path or "/"
         if parsed.query:
             path += "?" + parsed.query

@@ -7,7 +7,7 @@ import pytest
 
 from hermit import HermitError
 from hermit.service import Service
-from hermit.storage import Store, digest
+from hermit.storage import Store, Vault, digest
 
 
 class TestVault:
@@ -190,3 +190,31 @@ def test_testing_disabled_or_pending_mapping_is_rejected(service):
     service.apply()
     service.save_mapping({"port": 18081, "target": "node-a"}, ident)
     with pytest.raises(HermitError, match="先启用"): service.test(ident)
+
+
+def test_restore_preserves_original_bytes_including_crlf(service):
+    original = b"function main(c) {\r\n  return c;\r\n}\r\n"
+    service.clash.path.write_bytes(original)
+    add(service); service.apply(); service.apply(False)
+    assert service.clash.path.read_bytes() == original
+
+
+def test_recovery_does_not_overwrite_new_generation_same_profile(service):
+    add(service); service.clash.failures = 2
+    with pytest.raises(HermitError): service.apply()
+    service.clash.base['rules'] = ['MATCH,node-a']
+    with pytest.raises(HermitError, match='已更新'): service.recover()
+    assert service.store.pending()
+
+
+def test_lost_key_does_not_create_replacement_for_encrypted_data(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    (tmp_path / 'original.bin').write_text('encrypted-data')
+    calls = []
+    def run(*args, **kwargs):
+        calls.append(args[0])
+        return SimpleNamespace(returncode=44, stdout=b'', stderr=b'')
+    monkeypatch.setattr('hermit.storage.subprocess.run', run)
+    with pytest.raises(HermitError, match='密钥缺失'):
+        Vault(tmp_path).key()
+    assert len(calls) == 1

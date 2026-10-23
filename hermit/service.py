@@ -1,5 +1,4 @@
 import copy
-from datetime import datetime, timezone
 import json
 import time
 import uuid
@@ -12,8 +11,11 @@ from hermit.uri import parse_vless
 from hermit.probe import probe
 
 
-def timestamp():
-    return datetime.now(timezone.utc).isoformat()
+def read_script(path):
+    try:
+        return path.read_bytes().decode("utf-8")
+    except UnicodeError:
+        raise HermitError("全局脚本不是有效 UTF-8 文本，拒绝修改") from None
 
 
 class Service:
@@ -44,7 +46,7 @@ class Service:
                 result["status"] = "recovery-required"
                 return result
             try:
-                script = self.clash.script_path().read_text()
+                script = read_script(self.clash.script_path())
                 if state["enabled"]:
                     if digest(script) != state.get("scriptHash"):
                         result["errors"].append("全局脚本被外部修改；已暂停写入")
@@ -124,7 +126,7 @@ class Service:
             state = self.store.load()
             if not state["enabled"] or state["revision"] != state["appliedRevision"]:
                 raise HermitError("请先启用并应用当前映射后再测试")
-            if digest(self.clash.script_path().read_text()) != state.get("scriptHash"):
+            if digest(read_script(self.clash.script_path())) != state.get("scriptHash"):
                 raise HermitError("脚本存在外部修改，无法测试已保存映射")
             item = next((x for x in state["mappings"] if x["id"] == ident), None)
             if not item or not item["enabled"]:
@@ -160,7 +162,7 @@ class Service:
             if enabled is None:
                 enabled = state["enabled"]
             script_path = self.clash.script_path()
-            current_script = script_path.read_text()
+            current_script = read_script(script_path)
             original = self._original(state, current_script)
             if not enabled and not state["enabled"]:
                 return self.public_state(state)
@@ -196,7 +198,7 @@ class Service:
             journal = {"oldScript": current_script, "oldRuntime": previous_runtime, "oldState": state,
                        "newHash": digest(new_script), "scriptPath": str(script_path), "profile": profile,
                        "clashDirectory": str(self.clash.data_dir), "selections": self.clash.selections(),
-                       "newListeners": listeners}
+                       "newListeners": listeners, "generatedHash": generated_hash}
             self.store.write_private("journal.bin", journal)
             try:
                 self._unchanged(script_path, digest(current_script), profile, generated_hash)
@@ -218,7 +220,7 @@ class Service:
             return self.public_state(next_state)
 
     def _unchanged(self, path, expected, profile, generated_hash):
-        if digest(path.read_text()) != expected:
+        if digest(read_script(path)) != expected:
             raise HermitError("全局脚本发生外部修改")
         if self.clash.profile_id() != profile or digest(json.dumps(self.clash.generated(), sort_keys=True)) != generated_hash:
             raise HermitError("应用期间 Clash 配置发生变化")
@@ -236,8 +238,10 @@ class Service:
     def _rollback(self, journal):
         if str(self.clash.data_dir) != journal["clashDirectory"] or self.clash.profile_id() != journal["profile"]:
             raise HermitError("Clash 环境已变更，拒绝回滚到旧订阅")
+        if digest(json.dumps(self.clash.generated(), sort_keys=True)) != journal["generatedHash"]:
+            raise HermitError("Clash 生成配置已更新，拒绝用旧快照覆盖新配置")
         path = self.clash.script_path()
-        if str(path) != journal["scriptPath"] or digest(path.read_text()) not in {digest(journal["oldScript"]), journal["newHash"]}:
+        if str(path) != journal["scriptPath"] or digest(read_script(path)) not in {digest(journal["oldScript"]), journal["newHash"]}:
             raise HermitError("脚本发生外部修改，拒绝回滚覆盖")
         atomic_write(path, journal["oldScript"])
         self.clash.reload(journal["oldRuntime"])

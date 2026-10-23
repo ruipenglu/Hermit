@@ -1,5 +1,6 @@
 import argparse
 import json
+import subprocess
 import sys
 
 from hermit import HermitError
@@ -67,10 +68,12 @@ def main():
                 data["uri"] = sys.stdin.read(16385).strip()
             result = service.save_mapping(data, getattr(args, "id", None))
         print(json.dumps(result, ensure_ascii=False, indent=2))
+        if args.command == "test" and result["status"] != "verified":
+            return 1
     except HermitError as error:
         print(json.dumps({"error": str(error)}, ensure_ascii=False), file=sys.stderr)
         return 1
-    except (OSError, ValueError, KeyError) as error:
+    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired):
         print(json.dumps({"error": "本地文件或数据操作失败；请检查目录权限和配置完整性"}, ensure_ascii=False), file=sys.stderr)
         return 1
     return 0

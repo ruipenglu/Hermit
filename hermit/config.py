@@ -108,20 +108,23 @@ function main(config, profileName) {
   const data = __HERMIT_DATA__;
   const names = new Set([].concat(result.proxies || [], result['proxy-groups'] || [], result.listeners || []).map(x => x.name));
   for (const item of data.listeners.concat(data.proxies))
-    if (names.has(item.name)) throw new Error('Hermit: name collision');
+    if (names.has(item.name)) { console.error('Hermit: name collision; listeners not added'); return result; }
   const ports = [].concat(result.listeners || []).map(x => Number(x.port));
   for (const key of ['port', 'socks-port', 'mixed-port', 'redir-port', 'tproxy-port'])
     if (result[key]) ports.push(Number(result[key]));
+  const listeners = [];
   for (const item of data.listeners) {
-    if (ports.includes(item.port)) throw new Error('Hermit: port collision');
+    if (ports.includes(item.port)) { console.error('Hermit: port collision at ' + item.port); continue; }
     const own = data.proxies.some(x => x.name === item.proxy);
-    const inline = (result.proxies || []).some(x => x.name === item.proxy);
+    const inline = (result.proxies || []).some(x => x.name === item.proxy && !['direct','reject','pass','dns'].includes(x.type));
     const group = (result['proxy-groups'] || []).some(x => x.name === item.proxy);
-    if (group || (!own && !inline && !Object.keys(result['proxy-providers'] || {}).length))
-      throw new Error('Hermit: target node missing');
+    if (group || (!own && !inline && !Object.keys(result['proxy-providers'] || {}).length)) {
+      console.error('Hermit: target missing at ' + item.port); continue;
+    }
+    listeners.push(item);
   }
   if (data.proxies.length) result.proxies = (result.proxies || []).concat(data.proxies);
-  if (data.listeners.length) result.listeners = (result.listeners || []).concat(data.listeners);
+  if (listeners.length) result.listeners = (result.listeners || []).concat(listeners);
   return result;
 }
 """.replace("__HERMIT_DATA__", data)

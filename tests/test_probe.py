@@ -35,7 +35,7 @@ def test_reachable_ip_does_not_imply_verified_node(monkeypatch, chain, status):
         def begin(self): pass
         def read(self,*args): return b'{"ip":"203.0.113.1"}'
     monkeypatch.setattr('hermit.probe.socket.create_connection',lambda *a,**k:Sock())
-    monkeypatch.setattr('hermit.probe.ssl.create_default_context',lambda:TLS())
+    monkeypatch.setattr('hermit.probe.ssl.create_default_context',lambda **kwargs:TLS())
     monkeypatch.setattr('hermit.probe.http.client.HTTPResponse',Response)
     monkeypatch.setattr('hermit.probe.connection_chain',lambda *a:chain)
     result = probe(None,18080,'A')

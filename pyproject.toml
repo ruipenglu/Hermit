@@ -7,7 +7,7 @@ name = "hermit-proxy"
 version = "1.0.0"
 description = "Local fixed proxy ports for Clash Verge Rev on macOS"
 requires-python = ">=3.11"
-dependencies = ["PyYAML>=6.0.2,<7", "quickjs>=1.19.4,<2", "cryptography>=44,<49"]
+dependencies = ["PyYAML>=6.0.2,<7", "quickjs>=1.19.4,<2", "cryptography>=44,<49", "certifi>=2025.1.31"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "pyinstaller>=6,<7"]

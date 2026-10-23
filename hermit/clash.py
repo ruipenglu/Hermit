@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 import plistlib
-import shlex
+import re
 import socket
 import subprocess
 import tempfile
@@ -41,6 +41,7 @@ class Clash:
         self.data_dir = Path(data_dir or Path.home() / "Library/Application Support/io.github.clash-verge-rev.clash-verge-rev").resolve()
         self.app = Path(app or "/Applications/Clash Verge.app")
         self.binary = self.app / "Contents/MacOS/verge-mihomo"
+        self.core_pid = None
 
     def generated(self):
         return read_yaml(self.data_dir / "clash-verge.yaml")
@@ -62,21 +63,23 @@ class Clash:
     def socket_path(self):
         candidates = []
         # Service mode can override the socket written in the user config.
-        ps = subprocess.run(["ps", "-axo", "uid=,command="], capture_output=True, text=True, timeout=5)
+        ps = subprocess.run(["ps", "-axo", "pid=,uid=,command="], capture_output=True, text=True, timeout=5)
         for line in ps.stdout.splitlines():
             try:
-                uid, command = line.strip().split(None, 1)
-                parts = shlex.split(command)
-                if int(uid) not in {0, os.getuid()} or not parts or Path(parts[0]).name not in {"verge-mihomo", "verge-mihomo-alpha"}:
+                pid, uid, command = line.strip().split(None, 2)
+                executable = re.match(r"^(.*/verge-mihomo(?:-alpha)?)(?:\s+(.*))?$", command)
+                if int(uid) not in {0, os.getuid()} or not executable:
                     continue
-                if "-ext-ctl-unix" in parts:
-                    candidates.append(parts[parts.index("-ext-ctl-unix") + 1])
+                controller = re.search(r"(?:^|\s)-ext-ctl-unix\s+(.+?)(?=\s+-[A-Za-z]|$)", executable[2] or "")
+                if controller:
+                    candidates.append((controller[1], int(pid)))
             except (ValueError, IndexError):
                 continue
-        candidates += [f"/var/run/clash-verge-service/users/{os.getuid()}/verge-mihomo.sock",
-                       self.generated().get("external-controller-unix")]
-        for path in dict.fromkeys(candidates):
+        candidates += [(f"/var/run/clash-verge-service/users/{os.getuid()}/verge-mihomo.sock", None),
+                       (self.generated().get("external-controller-unix"), None)]
+        for path, pid in candidates:
             if path and Path(path).is_socket():
+                self.core_pid = pid
                 return path
         raise HermitError("未找到运行中的 Mihomo 本地 Unix socket；请启动 Clash Verge Rev")
 
@@ -108,7 +111,7 @@ class Clash:
                 raise HermitError("Clash 生成配置与运行端口不一致，拒绝接管；请在 Clash 重新应用配置")
         if runtime.get("mode") != config.get("mode", "rule"):
             raise HermitError("Clash 生成配置与运行模式不一致，请先在 Clash 重新应用配置")
-        names = {x["name"] for x in config.get("proxies", []) if not x["name"].startswith("hermit-")}
+        names = set(atomic_nodes({x["name"]: x for x in config.get("proxies", [])}))
         if not names.issubset(self.nodes()):
             raise HermitError("生成配置中的节点与当前运行节点不一致，请在 Clash 重新应用配置")
 

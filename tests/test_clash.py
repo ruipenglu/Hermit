@@ -1,4 +1,5 @@
 import copy
+from pathlib import Path
 
 import pytest
 
@@ -32,3 +33,18 @@ def test_missing_selection_fails_explicitly(tmp_path, monkeypatch):
     monkeypatch.setattr(clash, "request", lambda *args: {"proxies": {"group": {"all": ["A"]}}})
     with pytest.raises(HermitError, match="不可恢复"):
         clash.restore_selections({"group": "B"})
+
+
+def test_discovery_handles_unquoted_spaces_in_macos_process_paths(tmp_path, monkeypatch):
+    import socket
+    import tempfile
+    from types import SimpleNamespace
+    with tempfile.TemporaryDirectory(dir='/tmp') as short, socket.socket(socket.AF_UNIX) as sock:
+        path = str(Path(short) / 'core.sock')
+        sock.bind(path)
+        command = f'123 0 /Library/Application Support/clash-verge-service/cores/verge-mihomo -d /Library/Application Support/runtime -ext-ctl-unix {path}'
+        monkeypatch.setattr('hermit.clash.subprocess.run', lambda *a,**k: SimpleNamespace(stdout=command))
+        clash = Clash(tmp_path)
+        monkeypatch.setattr(clash, 'generated', lambda: {})
+        assert clash.socket_path() == path
+        assert clash.core_pid == 123
