@@ -167,3 +167,26 @@ def test_concurrent_operation_rejected(service):
     with service.store.lock():
         with pytest.raises(HermitError, match="正在执行"):
             add(service)
+
+
+def test_manual_uri_encrypted_redacted_and_preserved_on_edit(service):
+    uri = "vless://00000000-0000-4000-8000-000000000001@example.com:443?security=tls"
+    public = service.save_mapping({"port": 18081, "source": "manual-uri", "uri": uri})
+    item = public["mappings"][0]
+    assert item["hasCredential"] and "credential" not in item
+    assert uri not in json.dumps(public)
+    assert "00000000-0000-4000-8000-000000000001" not in (service.store.directory / "state.json").read_text()
+    ciphertext = service.store.load()["mappings"][0]["credential"]
+    service.save_mapping({"port": 18082, "source": "manual-uri"}, item["id"])
+    assert service.store.load()["mappings"][0]["credential"] == ciphertext
+    service.apply()
+    assert service.clash.runtime["listeners"][0]["proxy"] == "hermit-" + item["id"]
+    assert service.clash.runtime["proxies"][-1]["uuid"] in uri
+
+
+def test_testing_disabled_or_pending_mapping_is_rejected(service):
+    ident = add(service)["mappings"][0]["id"]
+    with pytest.raises(HermitError, match="先启用"): service.test(ident)
+    service.apply()
+    service.save_mapping({"port": 18081, "target": "node-a"}, ident)
+    with pytest.raises(HermitError, match="先启用"): service.test(ident)

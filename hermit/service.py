@@ -8,6 +8,8 @@ from hermit import HermitError
 from hermit.config import (MARKER, PREFIX, additions, check_port, compose_script,
                            evaluate_script, inject, listening, validate_mappings)
 from hermit.storage import Store, atomic_write, digest
+from hermit.uri import parse_vless
+from hermit.probe import probe
 
 
 def timestamp():
@@ -74,8 +76,15 @@ class Service:
                     "source": data.get("source", "active-profile"), "enabled": data.get("enabled", True)}
             if item["source"] == "active-profile":
                 item["target"] = data.get("target")
-            else:
-                raise HermitError("手动 URI 支持尚未配置")
+            elif item["source"] == "manual-uri":
+                uri = data.get("uri")
+                if uri:
+                    parse_vless(uri)
+                    item["credential"] = self.store.vault.encrypt(uri.strip())
+                elif old and old["source"] == "manual-uri":
+                    item["credential"] = old["credential"]
+                else:
+                    raise HermitError("请输入 VLESS URI")
             remaining = [x for x in state["mappings"] if x["id"] != ident]
             state["mappings"] = remaining + [item]
             validate_mappings(state["mappings"])
@@ -106,7 +115,29 @@ class Service:
         return base
 
     def _manual(self, state):
-        return {}
+        return {item["id"]: parse_vless(self.store.vault.decrypt(item["credential"]))
+                for item in state["mappings"] if item["source"] == "manual-uri" and item["enabled"]}
+
+    def test(self, ident):
+        with self.store.lock():
+            self.guard()
+            state = self.store.load()
+            if not state["enabled"] or state["revision"] != state["appliedRevision"]:
+                raise HermitError("请先启用并应用当前映射后再测试")
+            if digest(self.clash.script_path().read_text()) != state.get("scriptHash"):
+                raise HermitError("脚本存在外部修改，无法测试已保存映射")
+            item = next((x for x in state["mappings"] if x["id"] == ident), None)
+            if not item or not item["enabled"]:
+                raise HermitError("映射不存在或已停用")
+            expected = PREFIX + item["id"] if item["source"] == "manual-uri" else item["target"]
+            if item["source"] == "active-profile" and expected not in self.clash.nodes():
+                raise HermitError("目标节点已失效，请重新配置")
+            result = probe(self.clash, item["port"], expected)
+            result["mappingId"] = ident
+            item["lastTest"] = result
+            state["history"] = (state["history"] + [result])[-100:]
+            self.store.save(state)
+            return result
 
     def _original(self, state, current_script):
         if state["enabled"]:

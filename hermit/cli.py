@@ -18,6 +18,7 @@ def main():
     sub.add_parser("nodes", help="列出当前运行的原子代理节点")
     for name in ["status", "enable", "apply", "disable", "recover"]:
         sub.add_parser(name)
+    sub.add_parser("test").add_argument("id")
     mappings = sub.add_parser("map").add_subparsers(dest="action", required=True)
     mappings.add_parser("list")
     for action in ["add", "update"]:
@@ -25,7 +26,11 @@ def main():
         if action == "update":
             command.add_argument("id")
         command.add_argument("--port", type=int, required=True)
-        command.add_argument("--target", required=True)
+        source = command.add_mutually_exclusive_group(required=True)
+        source.add_argument("--target")
+        source.add_argument("--uri-stdin", action="store_true", help="从标准输入读取 URI，避免出现在进程参数与命令历史")
+        if action == "update":
+            source.add_argument("--keep-uri", action="store_true")
         command.add_argument("--disabled", action="store_true")
     mappings.add_parser("delete").add_argument("id")
     args = parser.parse_args()
@@ -42,13 +47,18 @@ def main():
             result = service.apply(args.command != "disable")
         elif args.command == "recover":
             result = service.recover()
+        elif args.command == "test":
+            result = service.test(args.id)
         elif args.action == "list":
             result = service.status()["mappings"]
         elif args.action == "delete":
             result = service.delete_mapping(args.id)
         else:
-            result = service.save_mapping({"port": args.port, "target": args.target, "enabled": not args.disabled},
-                                          getattr(args, "id", None))
+            data = {"port": args.port, "target": args.target, "enabled": not args.disabled,
+                    "source": "active-profile" if args.target else "manual-uri"}
+            if args.uri_stdin:
+                data["uri"] = sys.stdin.read(16385).strip()
+            result = service.save_mapping(data, getattr(args, "id", None))
         print(json.dumps(result, ensure_ascii=False, indent=2))
     except HermitError as error:
         print(json.dumps({"error": str(error)}, ensure_ascii=False), file=sys.stderr)
