@@ -15,8 +15,17 @@ type Store struct {
 	Vault     *Vault
 }
 
-// NewStore 创建（必要时初始化）数据目录；vault 为 nil 时按目录派生钥匙串 service。
+// DefaultStoreDir 是 Hermit 的默认数据目录。
+func DefaultStoreDir() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, "Library/Application Support/Hermit")
+}
+
+// NewStore 创建（必要时初始化）数据目录；空参数使用默认路径，vault 为 nil 时按目录派生钥匙串 service。
 func NewStore(directory string, vault *Vault) (*Store, error) {
+	if directory == "" {
+		directory = DefaultStoreDir()
+	}
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return nil, fmt.Errorf("mkdir: %w", err)
 	}

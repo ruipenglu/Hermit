@@ -1,10 +1,5 @@
-# 旧 Python/Swift 实现（阶段 9 移除后清理）
+# 旧实现的本地遗留（可直接删除）
 .venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
-*.egg-info/
-.coverage
 
 # Wails / Go / Node 构建产物
 bin/

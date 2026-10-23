@@ -34,7 +34,7 @@
 | 6 | Service 业务层 + 假环境集成测试：启停/CRUD/回滚/recover/测试探测/加密 | 完成 |
 | 7 | Wails 服务绑定 + 前端 API（串行操作、事件、浏览器 mock 自测） | 完成 |
 | 8 | 现代 UI 全部页面 + 浏览器自测（mock 数据走查四页与弹窗） | 完成 |
-| 9 | 打包 .app、真实环境只读检查、清理 Python/Swift 旧实现、README 更新 | 待验收 |
+| 9 | 打包 .app、真实环境只读检查、清理 Python/Swift 旧实现、README 更新 | 完成 |
 
 ## 验证边界
 
@@ -51,3 +51,11 @@
 - 阶段 6（业务层与探测）：旧 test_service 全部场景移植通过（启停/幂等/CRUD 分离保存、外部修改拒写、重载失败恢复、中断回滚 + recover、recover 拒绝覆盖外部脚本与新订阅、CRLF 原样恢复、端口占用先检后写、手动 URI 加密/脱敏/留空保留、未启用或待应用拒绝测试、状态 conflict/degraded 推导）；探测测试覆盖连接链精确匹配（源端口/入站端口/主机/回环，含数字型元数据与字段缺席）与 verified / mismatch / unconfirmed 分类（本地 SOCKS5 + TLS 服务端到端）。canonical JSON 与 Python json.dumps(sort_keys=True) 逐字节一致（含中文、emoji 代理对、控制字符、整值浮点 ".0"），跨版本事务日志哈希可比。核心包共 61 项测试全部通过。
 - 阶段 7（服务绑定）：app.Service 以互斥锁串行全部操作，编排「保存自动应用」「保存并测试」「删除自动应用」「总开关」；环境变量 HERMIT_DATA_DIR / HERMIT_CLASH_DIR 支持隔离测试。TS 绑定生成 10 方法 7 模型；前端 api 适配层在浏览器自动切换 mock（状态/节点/诊断/保存/测试/删除/开关/恢复/剪贴板完整可走查）。`wails3 build` 产物启动正常。已知差异：v3 beta.34 无窗口关闭拦截钩子，无法像旧版那样在退出前等待在途事务；以事务日志 + 启动后恢复提示兜底（核心本就为中断设计）。
 - 阶段 8（现代 UI）：全新设计（非照搬旧 SwiftUI 表格）：侧栏导航 + 状态卡（总开关/恢复按钮）+ 卡片式映射列表（端口等宽字体、状态药丸、最近测试行、测试/复制 URL/编辑/删除）+ 弹窗编辑器（分段来源切换、节点搜索选择、URI 圆点遮蔽输入、保存并测试内嵌结果面板与代理链）+ 历史（代理链展开）+ 环境（键值卡与恢复入口）+ 底部活动栏与 toast，明暗双主题。浏览器 mock 走查全部通过（四页 + 新增/编辑 + 保存并测试全流程 + 停用映射测试按钮禁用），视觉模型检查无重叠/溢出。修复两处自测发现的问题：浏览器环境检测误判（改用 window.wails.invokeAsync）、onClick 事件对象透传导致的渲染崩溃。
+- 阶段 9（打包与收尾）：品牌图标沿用旧版 icns（iconutil 提取 1024px）；`wails3 package` 产出 `bin/hermit.app`（arm64、本地临时签名，codesign --verify 通过，Bundle ID local.hermit.app，v1.1.0），打包应用启动窗口正常。真实环境只读检查通过：doctor（Clash Verge Rev 2.5.8 / Mihomo v1.19.32 / local-unix-socket）、nodes（含 emoji 中文名节点）、status 直接读取旧版写入的**真实生产数据**（状态推导正确，全程未触碰钥匙串），跨版本数据兼容在生产环境验证。修复真实检查发现的问题：NewStore 空参数未回退默认目录。Python/Swift 旧实现、PyInstaller 配置与旧构建脚本已移除（git 历史可查），.gitignore 收敛为 Go/Node。
+
+## 未验收与已知限制
+
+- 真实 Clash 写入路径（启用/停用/应用/测试、真实订阅更新与 Clash 重启事件）未在本轮执行；写入逻辑由假环境集成测试覆盖（启停/回滚/恢复/加密全场景）。
+- Developer ID 签名 / Apple 公证、Intel 构建、其他 macOS / Clash 版本不在本轮范围。
+- Wails v3 beta.34 无窗口关闭拦截钩子：无法像旧版那样退出前等待在途事务；以加密事务日志 + 启动后「环境与恢复」提示兜底（核心本就为中断设计）。
+- goja 与 QuickJS 的运行时差异（无内存硬限制）已用 1 秒中断时限缓解；真实全局脚本已在 goja 下只读求值验证。
