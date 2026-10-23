@@ -203,8 +203,11 @@ func EvaluateScript(script string, config map[string]any, profileName string) (m
 	if !ok {
 		return nil, unsafe
 	}
+	// UseNumber 保留数字字面，便于与 Inject 结果做 canonical 比较
+	decoder := json.NewDecoder(strings.NewReader(encoded))
+	decoder.UseNumber()
 	var result any
-	if json.Unmarshal([]byte(encoded), &result) != nil {
+	if decoder.Decode(&result) != nil {
 		return nil, unsafe
 	}
 	parsed, ok := result.(map[string]any)

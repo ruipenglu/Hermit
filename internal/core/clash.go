@@ -62,6 +62,18 @@ func NewClash(dataDir, app string) *Clash {
 // BinaryPath 返回 Mihomo 内核路径。
 func (c *Clash) BinaryPath() string { return filepath.Join(c.AppPath, "Contents/MacOS/verge-mihomo") }
 
+// Directory 返回 Clash 数据目录（供接口调用）。
+func (c *Clash) Directory() string { return c.DataDir }
+
+// Connections 返回当前活动连接列表。
+func (c *Clash) Connections() ([]any, error) {
+	response, err := c.request("GET", "/connections", nil)
+	if err != nil {
+		return nil, err
+	}
+	return sliceOf(asMap(response)["connections"]), nil
+}
+
 // ReadYAML 读取 YAML 配置为通用对象。
 func ReadYAML(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
@@ -334,6 +346,9 @@ func numeric(value any) int {
 		return int(v)
 	case float64:
 		return int(v)
+	case json.Number:
+		n, _ := v.Int64()
+		return int(n)
 	default:
 		return 0
 	}
@@ -346,6 +361,7 @@ func sliceOf(value any) []any {
 
 // Validate 用已安装的 Mihomo 内核校验候选配置，通过前不落盘任何变更。
 func (c *Clash) Validate(config map[string]any) error {
+	config = normalizeNumbers(config).(map[string]any)
 	binary := c.BinaryPath()
 	if info, err := os.Stat(binary); err != nil || info.IsDir() {
 		return Fail("找不到已安装的 Mihomo 内核")
@@ -449,6 +465,7 @@ func (c *Clash) RestoreSelections(selections map[string]string) error {
 
 // Reload 以候选配置强制重载内核并恢复策略组选择。
 func (c *Clash) Reload(config map[string]any) error {
+	config = normalizeNumbers(config).(map[string]any)
 	selections, err := c.Selections()
 	if err != nil {
 		return err
