@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hermit-proxy"
+version = "1.0.0"
+description = "Local fixed proxy ports for Clash Verge Rev on macOS"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6.0.2,<7", "quickjs>=1.19.4,<2", "cryptography>=44,<49"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "pyinstaller>=6,<7"]
+
+[project.scripts]
+hermit = "hermit.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["hermit*"]
+
+[tool.setuptools.package-data]
+hermit = ["web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
