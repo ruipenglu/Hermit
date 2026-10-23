@@ -2,11 +2,11 @@
 
 macOS 上的 Clash Verge Rev 固定代理端口管理器。将 `127.0.0.1:18080` 等独立端口绑定具体节点，保留现有分流。
 
-开发顺序和验收状态见 [PLAN.md](PLAN.md)。v1.0 先实现核心 CLI 和事务，再交付管理界面。
+开发顺序和验收状态见 [PLAN.md](PLAN.md)。客户端使用 SwiftUI 原生界面，复用 Python 核心，通过应用内子进程的私有管道通信。
 
 ## 使用应用
 
-本次构建产物是 `dist/Hermit.app`（Apple Silicon，当前内置 Python 要求 macOS 14.3+），自带 Python 及依赖，可复制到「应用程序」后双击启动。它会打开默认浏览器中的本机管理界面；不需要另外安装 Python。Clash Verge Rev 必须已安装、启动并加载有效配置。
+本次构建产物是 `dist/Hermit.app`（Apple Silicon，当前内置 Python 要求 macOS 14.3+），自带 Python 及依赖，可复制到「应用程序」后双击启动。它会打开独立的原生 macOS 窗口，支持 Dock、菜单和快捷键；不启动浏览器或 HTTP 服务，不需要另外安装 Python。Clash Verge Rev 必须已安装、启动并加载有效配置。
 
 1. 在「端口映射」中添加端口，选择当前活动节点，或粘贴 VLESS URI。
 2. 保存映射后开启顶部总开关。后续修改需点击「应用更改」。
@@ -25,7 +25,8 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.lock
 .venv/bin/python -m pip install -e . --no-deps
 .venv/bin/hermit doctor
-.venv/bin/hermit serve
+sh scripts/build.sh
+open dist/Hermit.app
 ```
 
 ```sh

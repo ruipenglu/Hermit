@@ -18,8 +18,5 @@ hermit = "hermit.cli:main"
 [tool.setuptools.packages.find]
 include = ["hermit*"]
 
-[tool.setuptools.package-data]
-hermit = ["web/*"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
