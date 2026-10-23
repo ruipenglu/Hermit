@@ -34,12 +34,26 @@ Clash Verge Rev 的固定代理端口管理器。将 `127.0.0.1:18080` 等本地
 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.34
 wails3 build          # 构建二进制（含前端与绑定生成）
 wails3 package        # 产出 bin/hermit.app 并本地签名
-wails3 dev            # 开发模式（前端热更新）
-cd frontend && npm run dev   # 仅浏览器预览 UI（mock 数据）
+wails3 dev            # 开发模式（真实后端 + 前端热更新）
 go test ./...         # 核心测试
 ```
 
 环境变量 `HERMIT_DATA_DIR` / `HERMIT_CLASH_DIR` 可覆盖数据目录与 Clash 目录，用于隔离测试。
+
+### 浏览器预览 UI（快速调试样式与交互）
+
+前端 API 层会检测运行环境：不在 Wails 窗口内（无注入的 IPC）时自动切换到 mock 实现，**不触碰真实 Clash 与本地数据**，所有页面、弹窗和操作（保存 / 测试 / 删除 / 开关 / 恢复）均可完整走查。
+
+```sh
+cd frontend
+npm run dev                    # 默认 http://127.0.0.1:9245
+npx vite --port 5199           # 或指定端口
+```
+
+- 改样式 / 组件后保存即热更新，无需重启；设计系统（配色、圆角、明暗主题）集中在 `frontend/src/styles.css` 的 CSS 变量里。
+- 想预览特定状态（如 degraded、待应用、恢复中），直接编辑 `frontend/src/api/mock.ts` 顶部的示例映射与状态开关，保存后刷新即可。
+- mock 操作带模拟延迟（保存约 0.6s、测试约 1.4s），测试结果随机产生 verified / mismatch / unconfirmed 三种状态，便于观察各样式分支。
+- 需要验证真实数据链路时再切回 `wails3 dev` 或打包应用。
 
 ## 凭据与恢复
 
