@@ -19,6 +19,9 @@ def main():
     for name in ["status", "enable", "apply", "disable", "recover"]:
         sub.add_parser(name)
     sub.add_parser("test").add_argument("id")
+    server = sub.add_parser("serve", help="启动本机管理界面")
+    server.add_argument("--port", type=int, default=0)
+    server.add_argument("--no-browser", action="store_true")
     mappings = sub.add_parser("map").add_subparsers(dest="action", required=True)
     mappings.add_parser("list")
     for action in ["add", "update"]:
@@ -37,14 +40,18 @@ def main():
     try:
         clash = Clash(args.clash_dir, args.clash_app)
         service = Service(clash, Store(args.data_dir))
-        if args.command == "doctor":
+        if args.command == "serve":
+            from hermit.server import serve
+            serve(service, args.port, not args.no_browser)
+            return 0
+        elif args.command == "doctor":
             result = clash.doctor()
         elif args.command == "nodes":
             result = [{"name": name, "type": proxy["type"]} for name, proxy in clash.nodes().items()]
         elif args.command == "status":
             result = service.status()
         elif args.command in {"enable", "apply", "disable"}:
-            result = service.apply(args.command != "disable")
+            result = service.apply(None if args.command == "apply" else args.command != "disable")
         elif args.command == "recover":
             result = service.recover()
         elif args.command == "test":

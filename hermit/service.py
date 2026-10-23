@@ -157,6 +157,8 @@ class Service:
         with self.store.lock():
             self.guard()
             state = self.store.load()
+            if enabled is None:
+                enabled = state["enabled"]
             script_path = self.clash.script_path()
             current_script = script_path.read_text()
             original = self._original(state, current_script)

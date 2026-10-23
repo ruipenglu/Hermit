@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><title>Hermit · 固定代理端口</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Hermit 首页"><img src="/icon.svg" alt="" width="46" height="46"><span><strong>Hermit</strong><small>固定代理端口管理器</small></span></a>
+      <nav aria-label="主导航">
+        <button class="nav active" data-view="mappings"><span aria-hidden="true">▱</span>端口映射</button>
+        <button class="nav" data-view="nodes"><span aria-hidden="true">▤</span>活动节点</button>
+        <button class="nav" data-view="tests"><span aria-hidden="true">⌁</span>测试记录</button>
+        <button class="nav" data-view="settings"><span aria-hidden="true">⚙</span>环境与恢复</button>
+      </nav>
+      <div class="sidebar-bottom"><p id="connection"><i class="dot"></i>正在连接 Clash</p><small>本地优先 · v1.0.0</small></div>
+    </aside>
+    <main>
+      <header class="page-heading"><div><p class="eyebrow">YOUR PORT. YOUR EXIT.</p><h1 id="page-title">端口映射</h1></div><span class="local-badge"><i class="dot green"></i>仅本机访问</span></header>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <section class="hero" aria-label="运行状态">
+        <button id="power" class="switch" role="switch" aria-checked="false" aria-label="启用固定端口映射"><span></span></button>
+        <div class="hero-copy"><h2 id="status-title">正在读取运行状态</h2><p id="status-detail">检查脚本、映射与本地监听端口</p></div>
+        <button id="apply" class="button secondary" hidden>应用更改</button>
+        <button id="recover" class="button secondary" hidden>恢复未完成操作</button>
+      </section>
+      <section id="view-mappings" class="view">
+        <div class="workspace">
+          <div class="content-column">
+            <section class="panel mappings-panel"><header class="panel-heading"><div><h2>固定出口</h2><p>每个端口连接一个明确的节点</p></div><button id="add" class="button primary"><span aria-hidden="true">＋</span> 新增映射</button></header>
+              <div class="table-wrap"><table class="mapping-table"><thead><tr><th>本地端口</th><th>目标节点</th><th>状态</th><th>操作</th></tr></thead><tbody id="mapping-rows"></tbody></table></div>
+              <div id="empty-mappings" class="empty" hidden><span class="empty-icon" aria-hidden="true">⇄</span><h3>从一个固定出口开始</h3><p>添加端口，选择活动节点或粘贴 VLESS URI。</p><button id="empty-add" class="button secondary">添加第一个映射</button></div>
+              <footer class="panel-foot"><span id="mapping-count">0 条映射</span><span>监听地址 127.0.0.1 · HTTP / SOCKS5</span></footer>
+            </section>
+            <section class="panel"><header class="panel-heading"><div><h2>最近测试</h2><p>出口 IP 与节点身份，分别验证</p></div><button class="text-button" id="all-tests">查看全部 ↗</button></header><div id="recent-tests"></div></section>
+          </div>
+          <aside class="panel editor" aria-label="映射编辑面板"><header class="panel-heading"><h2 id="editor-title">新增端口映射</h2><button id="reset-editor" class="icon-button" aria-label="重置编辑面板">×</button></header>
+            <form id="mapping-form">
+              <label for="port">本地端口</label><div class="port-field"><span>127.0.0.1 :</span><input id="port" name="port" type="number" min="1024" max="65535" step="1" value="18080" required></div><p class="field-help">1024–65535，不能与其他入站端口重复</p>
+              <fieldset><legend>节点来源</legend><label class="radio-label"><input type="radio" name="source" value="active-profile" checked> 当前配置中的节点</label><label class="radio-label"><input type="radio" name="source" value="manual-uri"> 手动 VLESS URI</label></fieldset>
+              <div id="active-fields"><label for="target">选择节点</label><select id="target" name="target"><option value="">正在读取节点…</option></select><p class="field-help">仅列出正在运行的原子节点</p></div>
+              <div id="manual-fields" hidden><label for="uri">VLESS URI</label><input id="uri" name="uri" type="password" autocomplete="off" spellcheck="false" placeholder="vless://…"><button id="show-uri" type="button" class="text-button">显示输入内容</button><p class="field-help">支持 TLS / REALITY / WebSocket / gRPC。凭据加密保存在本机。</p></div>
+              <label class="checkbox-label"><input id="mapping-enabled" type="checkbox" checked>启用此映射</label>
+              <div class="editor-actions"><button id="save" type="submit" class="button primary wide">保存映射</button><button id="editor-test" type="button" class="button secondary wide" hidden>测试已应用的连接</button><button id="delete" type="button" class="text-button danger wide" hidden>删除映射</button></div>
+              <p class="field-help save-help">保存后点击「应用更改」。首次使用请开启总开关。</p>
+            </form>
+          </aside>
+        </div>
+      </section>
+      <section id="view-nodes" class="view panel" hidden><header class="panel-heading"><div><h2>当前活动节点</h2><p>直接来自运行中的 Mihomo，策略组和 DIRECT 不参与绑定</p></div><button id="refresh-nodes" class="button secondary">刷新节点</button></header><div id="node-list" class="node-grid"></div></section>
+      <section id="view-tests" class="view panel" hidden><header class="panel-heading"><div><h2>连接测试记录</h2><p>保留最近 100 条摘要；展开记录可查看实际代理链</p></div></header><div id="test-history"></div></section>
+      <section id="view-settings" class="view panel settings" hidden><header class="panel-heading"><div><h2>环境与恢复</h2><p>配置保存在本机，关闭 Hermit 映射时恢复原全局脚本</p></div><button id="check-environment" class="button secondary">重新检查</button></header><dl id="environment"></dl><div class="settings-note"><h3>关于连接验证</h3><p>「已应用」表示脚本已写入、内核已重载且监听就绪。只有测试结果为「身份已确认」，才代表该次请求的代理链包含指定节点。</p><p>Hermit 只管理经过这些本地端口的流量。测试请求会访问 api.ipify.org 查询出口 IP。</p><h3>凭据与恢复</h3><p>手动节点 URI 和恢复快照加密保存，密钥位于 macOS 钥匙串。供 Clash 执行的脚本包含内核所需凭据，仅当前用户可读取。</p><p>外部修改脚本时会暂停写入；未完成的变更可通过「恢复未完成操作」恢复。请保留 Hermit 数据目录及对应钥匙串。</p></div><footer class="settings-footer"><p>退出管理界面后，已应用的固定端口继续由 Clash 提供服务。</p><button id="quit" class="button secondary">退出 Hermit</button></footer></section>
+      <footer class="app-foot">Hermit <span>让每个端口，都有确定的去向。</span></footer>
+    </main>
+  </div>
+  <div id="toast" role="alert" hidden></div>
+</body>
+</html>
