@@ -10,6 +10,77 @@
 // @ts-ignore: Unused imports
 import { Call as $Call, CancellablePromise as $CancellablePromise } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as core$0 from "../core/models.js";
+
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as $models from "./models.js";
+
+/**
+ * DeleteMapping 删除映射；总开关开启时自动应用。
+ */
+export function DeleteMapping(id: string): $CancellablePromise<core$0.PublicState> {
+    return $Call.ByID(2937995645, id);
+}
+
+/**
+ * Doctor 只读检查 Clash 环境。
+ */
+export function Doctor(): $CancellablePromise<{ [_ in string]?: any } | null> {
+    return $Call.ByID(4107417461);
+}
+
+/**
+ * Nodes 返回当前运行的活动原子节点（按名称排序）。
+ */
+export function Nodes(): $CancellablePromise<$models.NodeInfo[] | null> {
+    return $Call.ByID(3869181143);
+}
+
+/**
+ * Recover 恢复未完成事务。
+ */
+export function Recover(): $CancellablePromise<{ [_ in string]?: any } | null> {
+    return $Call.ByID(3733518966);
+}
+
+/**
+ * SaveAndTest 保存映射、开启总开关并应用，然后立即测试指定出口。
+ */
+export function SaveAndTest(draft: $models.MappingDraft): $CancellablePromise<$models.SaveTestResult> {
+    return $Call.ByID(189017532, draft);
+}
+
+/**
+ * SaveMapping 保存映射；总开关开启时自动应用，关闭时仅保存。
+ */
+export function SaveMapping(draft: $models.MappingDraft): $CancellablePromise<$models.SaveResult> {
+    return $Call.ByID(3679080403, draft);
+}
+
+/**
+ * SetEnabled 开启或关闭总开关。
+ */
+export function SetEnabled(enabled: boolean): $CancellablePromise<core$0.PublicState> {
+    return $Call.ByID(2048929503, enabled);
+}
+
+/**
+ * Status 返回当前状态与映射列表。
+ */
+export function Status(): $CancellablePromise<core$0.PublicState> {
+    return $Call.ByID(925552684);
+}
+
+/**
+ * TestMapping 对已应用的映射执行出口与代理链测试。
+ */
+export function TestMapping(id: string): $CancellablePromise<core$0.TestRecord> {
+    return $Call.ByID(1025242628, id);
+}
+
 /**
  * Version 返回应用版本号。
  */

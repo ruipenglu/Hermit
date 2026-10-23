@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Service } from '../bindings/github.com/lurp/hermit/internal/app'
+import { api } from './api'
 
 function App() {
   const [version, setVersion] = useState('…')
   const [error, setError] = useState('')
 
   useEffect(() => {
-    Service.Version()
+    api.version()
       .then(setVersion)
       .catch((e) => setError(String(e)))
   }, [])

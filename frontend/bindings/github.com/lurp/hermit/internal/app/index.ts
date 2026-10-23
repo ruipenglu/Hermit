@@ -5,3 +5,10 @@ import * as Service from "./service.js";
 export {
     Service
 };
+
+export type {
+    MappingDraft,
+    NodeInfo,
+    SaveResult,
+    SaveTestResult
+} from "./models.js";
