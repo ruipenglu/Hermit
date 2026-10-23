@@ -27,7 +27,7 @@
 | 阶段 | 内容与验收 | 状态 |
 | --- | --- | --- |
 | 1 | Wails v3 + React/TS 骨架可构建出窗口，绑定链路打通 | 完成 |
-| 2 | Go 存储层：state/Fernet 钥匙串/flock/原子写/日志，单测通过 | 待验收 |
+| 2 | Go 存储层：state/Fernet 钥匙串/flock/原子写/日志，单测通过 | 完成 |
 | 3 | Clash 集成层：yaml/脚本发现/socket 发现/节点/校验/重载/doctor，假环境单测通过 | 待验收 |
 | 4 | VLESS 解析器：参数与错误用例对齐旧测试，单测通过 | 待验收 |
 | 5 | 脚本合成与 goja 求值：组合等价、越权拒绝、超时中断，单测通过 | 待验收 |
@@ -44,4 +44,4 @@
 
 ## 验收结果
 
-- 暂无；按阶段完成后逐步记录。
+- 阶段 2（存储层）：`go test ./internal/core/` 通过（状态/锁/加密/校验/原子写/符号链接拒绝）。跨实现互通已验证：Go fernet-go ↔ Python cryptography 双向解密对方密文；旧 Python 写入的 state.json 可被 Go 读取，Go 写入的（含 lastTest 可空字段）可被旧 Python 读取。
