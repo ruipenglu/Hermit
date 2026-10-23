@@ -23,7 +23,9 @@ export interface Api {
   copyText(text: string): Promise<void>
 }
 
-const inWails = typeof window !== 'undefined' && (window as { _wails?: unknown })._wails !== undefined
+// 真实 webview 由 Wails 注入 window.wails.invokeAsync；浏览器里没有（@wailsio/runtime 只提供 UI 预览 polyfill）
+const inWails = typeof window !== 'undefined' &&
+  typeof (window as { wails?: { invokeAsync?: unknown } }).wails?.invokeAsync === 'function'
 
 const realApi: Api = {
   version: () => AppService.Version(),
