@@ -21,7 +21,7 @@ def dispatch(service, request):
     if action == "doctor":
         return service.clash.doctor()
     if action == "save":
-        return service.save_mapping(data, data.get("id"))
+        return service.save_mapping(data, data.get("id"))["mappings"][-1]
     if action == "delete":
         return service.delete_mapping(data.get("id"))
     if action in {"enable", "disable", "apply"}:

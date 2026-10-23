@@ -131,13 +131,23 @@ enum Page: String, CaseIterable, Identifiable {
 @MainActor
 final class MappingDraft: ObservableObject, Identifiable {
     let id = UUID()
-    let mapping: Mapping?
+    @Published var mapping: Mapping?
     @Published var port: String
     @Published var source: String
     @Published var target: String
     @Published var enabled: Bool
     @Published var uri = ""
     @Published var showURI = false
+    @Published var testResult: TestRecord?
+
+    var input: MappingInput? {
+        guard let value = Int(port) else { return nil }
+        return MappingInput(id: mapping?.id, port: value, source: source, enabled: enabled,
+                            target: source == "active-profile" ? target : nil,
+                            uri: source == "manual-uri" && !uri.isEmpty ? uri : nil)
+    }
+
+    func clearTestResult() { testResult = nil }
 
     init(mapping: Mapping? = nil, port: Int = 18080, target: String = "") {
         self.mapping = mapping
@@ -230,6 +240,28 @@ final class ClientModel: ObservableObject {
         var port = 18080
         while state.mappings.contains(where: { $0.port == port }) { port += 1 }
         editor = MappingDraft(port: port, target: target)
+    }
+
+    func testDraft(_ draft: MappingDraft) async {
+        guard !busy, !terminationRequested else { return }
+        guard let input = draft.input else { error = "监听端口必须是 1024–65535 的整数"; return }
+        busy = true
+        activity = "正在保存、应用并验证连接…"
+        draft.testResult = nil
+        defer { finish() }
+        do {
+            let mapping = try await call("save", data: input, as: Mapping.self)
+            draft.mapping = mapping
+            draft.uri = ""
+            let _: EmptyReply = try await call("enable", as: EmptyReply.self)
+            let result = try await call("test", data: MappingInput(id: mapping.id), as: TestRecord.self)
+            draft.testResult = result
+            notice = result.message
+            state = try await call("status", as: CoreState.self)
+        } catch {
+            self.error = error.localizedDescription
+            if let current = try? await call("status", as: CoreState.self) { state = current }
+        }
     }
     func canTest(_ mapping: Mapping) -> Bool {
         state.enabled && mapping.enabled && !state.pending && !state.recoveryRequired && !busy

@@ -23,7 +23,16 @@ struct NativeSmoke {
         assert(model.editor?.target == "test-node")
         assert(!state.mappings.contains { String($0.port) == model.editor?.port })
         assert(model.editor?.uri.isEmpty == true)
+        guard let draft = model.editor else { fatalError("Missing draft") }
+        assert(draft.input?.target == "test-node")
+        draft.source = "manual-uri"
+        draft.uri = "test-uri"
+        assert(draft.input?.uri == "test-uri" && draft.input?.target == nil)
+        draft.port = "invalid"
+        assert(draft.input == nil)
         model.busy = true
+        await model.testDraft(draft)
+        assert(draft.mapping == nil && draft.testResult == nil)
         let busyRequest = await model.perform("enable")
         assert(!busyRequest)
         model.busy = false

@@ -20,11 +20,13 @@ def request(service, action, data=None):
 def test_mapping_roundtrip(service):
     reply = request(service, "save", {"port": 18080, "target": "node-a"})
     assert reply["ok"]
-    ident = reply["result"]["mappings"][0]["id"]
+    ident = reply["result"]["id"]
     assert request(service, "status")["result"]["mappings"][0]["id"] == ident
-    assert request(service, "save", {"id": ident, "port": 18081, "target": "node-a"})["ok"]
+    assert request(service, "save", {"port": 18082, "target": "node-a"})["ok"]
+    updated = request(service, "save", {"id": ident, "port": 18081, "target": "node-a"})
+    assert updated["ok"] and updated["result"]["id"] == ident and updated["result"]["port"] == 18081
     assert request(service, "delete", {"id": ident})["ok"]
-    assert request(service, "status")["result"]["mappings"] == []
+    assert [m["port"] for m in request(service, "status")["result"]["mappings"]] == [18082]
 
 
 @pytest.mark.parametrize("raw", [b"invalid", b"[]", b"{}", b'{"action":1}', b'{"action":"save","data":[]}', b'{"action":"unknown"}', b"x" * 32769])
@@ -38,7 +40,7 @@ def test_uri_not_returned_to_client(service):
     uri = "vless://00000000-0000-4000-8000-000000000001@example.com:443"
     reply = request(service, "save", {"port": 18081, "source": "manual-uri", "uri": uri})
     assert reply["ok"]
-    assert reply["result"]["mappings"][0]["hasCredential"]
+    assert reply["result"]["hasCredential"]
     assert "00000000-0000-4000-8000-000000000001" not in json.dumps(reply)
     assert '"credential"' not in json.dumps(reply)
 

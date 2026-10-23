@@ -50,8 +50,12 @@ struct ContentView: View {
             }
         }
         .task { await model.refresh() }
-        .onReceive(timer) { _ in Task { await model.refresh(all: false) } }
+        .onReceive(timer) { _ in
+            guard model.editor == nil else { return }
+            Task { await model.refresh(all: false) }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            guard model.editor == nil else { return }
             Task { await model.refresh() }
         }
         .sheet(item: $model.editor) { draft in MappingEditor(model: model, draft: draft) }
@@ -266,6 +270,26 @@ struct MappingEditor: View {
                     }
                     Toggle("启用此映射", isOn: $draft.enabled).accessibilityIdentifier("mapping-enabled")
                 }
+                Section {
+                    Button {
+                        Task { await model.testDraft(draft) }
+                    } label: {
+                        Label(model.busy ? "正在处理…" : "保存并测试", systemImage: "play.circle")
+                    }
+                    .disabled(!draft.enabled || model.state.recoveryRequired)
+                    .accessibilityIdentifier("test-mapping")
+                    Text("保存并应用映射、开启总开关后测试；完成后保持启用。")
+                        .font(.caption).foregroundStyle(.secondary)
+                    if let result = draft.testResult {
+                        VStack(alignment: .leading, spacing: 7) {
+                            Label(result.status == "verified" ? "指定出口身份已确认" : result.message,
+                                  systemImage: result.status == "verified" ? "checkmark.circle.fill" : "exclamationmark.circle")
+                                .foregroundStyle(result.status == "verified" ? Color.green : .orange)
+                            Text("出口 IP：\(result.exitIp ?? "未取得") · \(result.latencyMs.map(String.init) ?? "—") ms")
+                            Text("实际代理链：" + (result.actualChain.isEmpty ? "未捕获" : result.actualChain.map(model.proxyLabel).joined(separator: " → ")))
+                        }.font(.caption).textSelection(.enabled).accessibilityIdentifier("mapping-test-result")
+                    }
+                }
             }.formStyle(.grouped).disabled(model.busy)
             Divider()
             HStack {
@@ -276,19 +300,22 @@ struct MappingEditor: View {
                 }
                 Spacer()
                 Button("取消", role: .cancel) { draft.uri = ""; dismiss() }.keyboardShortcut(.cancelAction)
-                Button("保存映射") {
-                    guard let value = Int(draft.port) else { model.error = "监听端口必须是 1024–65535 的整数"; return }
-                    let input = MappingInput(id: draft.mapping?.id, port: value, source: draft.source, enabled: draft.enabled,
-                                             target: draft.source == "active-profile" ? draft.target : nil,
-                                             uri: draft.source == "manual-uri" && !draft.uri.isEmpty ? draft.uri : nil)
+                Button(draft.testResult == nil ? "保存映射" : "完成") {
+                    if draft.testResult != nil { dismiss(); return }
+                    guard let input = draft.input else { model.error = "监听端口必须是 1024–65535 的整数"; return }
                     Task { if await model.perform("save", data: input) { draft.uri = ""; dismiss() } }
                 }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).accessibilityIdentifier("save-mapping")
             }.padding(20).disabled(model.busy)
         }
-        .frame(width: 520, height: 470)
+        .frame(width: 520, height: draft.testResult == nil ? 570 : 660)
         .interactiveDismissDisabled(model.busy)
         .onDisappear { draft.uri = "" }
-        .alert("无法保存映射", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
+        .onChange(of: draft.port) { draft.clearTestResult() }
+        .onChange(of: draft.source) { draft.clearTestResult() }
+        .onChange(of: draft.target) { draft.clearTestResult() }
+        .onChange(of: draft.uri) { draft.clearTestResult() }
+        .onChange(of: draft.enabled) { draft.clearTestResult() }
+        .alert("操作失败", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
             Button("好") { model.error = nil }
         } message: { Text(model.error ?? "") }
     }
