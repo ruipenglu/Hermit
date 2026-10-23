@@ -59,7 +59,7 @@ export function MappingsPage(props: {
               <div className="mapping-main">
                 <div className="mapping-target">
                   {mapping.source === 'manual-uri'
-                    ? <><span className="pill accent">手动 VLESS</span> 加密保存在本机</>
+                    ? <><span className="pill accent">手动节点</span>{mapping.target || '加密保存在本机'}</>
                     : mapping.target ?? '未知节点'}
                   <span className={`pill ${status.tone}`}>{status.label}</span>
                 </div>

@@ -29,7 +29,7 @@ let enabled = true
 let mappings: PublicMapping[] = [
   { id: 'a1b2c3', port: 18080, source: 'active-profile', target: '日本 VLESS A', enabled: true, hasCredential: false,
     lastTest: record(18080, '日本 VLESS A', 'verified', '203.0.113.7', ['日本 VLESS A'], 260) },
-  { id: 'd4e5f6', port: 18081, source: 'manual-uri', enabled: true, hasCredential: true,
+  { id: 'd4e5f6', port: 18081, source: 'manual-uri', target: 'test-reality-node', enabled: true, hasCredential: true,
     lastTest: record(18081, 'hermit-d4e5f6', 'mismatch', '198.51.100.4', ['美国 B'], 180) },
   { id: '7890ab', port: 18082, source: 'active-profile', target: '香港 02', enabled: false, hasCredential: false },
 ]

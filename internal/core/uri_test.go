@@ -5,94 +5,99 @@ import (
 	"testing"
 )
 
-const testURI = "vless://00000000-0000-4000-8000-000000000001@example.com:443"
+const testURI = "vless://00000000-0000-4000-8000-000000000001@example.com:443?security=tls"
 
-const realityKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" // 43 个 x
+// 保留 REALITY + vision + spx 参数组合的解析覆盖。
+const realityURI = "vless://00000000-0000-4000-8000-000000000002@203.0.113.10:443" +
+	"?encryption=none&flow=xtls-rprx-vision&security=reality&sni=example.com&fp=chrome" +
+	"&pbk=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&sid=0123456789abcdef&spx=%2F&type=tcp&headerType=none#test-reality-node"
 
-func TestParseVLESSTCPAndTLS(t *testing.T) {
-	result, err := ParseVLESS(testURI)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result["uuid"] != "00000000-0000-4000-8000-000000000001" {
-		t.Fatalf("uuid = %v", result["uuid"])
-	}
-	result, err = ParseVLESS(testURI + "?security=tls&sni=example.org&alpn=h2%2Chttp%2F1.1&fp=chrome&flow=xtls-rprx-vision")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result["tls"] != true || result["servername"] != "example.org" {
-		t.Fatalf("tls = %v", result)
-	}
-	if alpn := result["alpn"].([]string); len(alpn) != 2 || alpn[0] != "h2" || alpn[1] != "http/1.1" {
-		t.Fatalf("alpn = %v", result["alpn"])
-	}
-	if result["flow"] != "xtls-rprx-vision" || result["client-fingerprint"] != "chrome" {
-		t.Fatalf("flow/fp = %v", result)
-	}
-}
+const vmessURI = "vmess://eyJ2IjoiMiIsInBzIjoi5b6u6Laj5a2XIiwiYWRkIjoiZXhhbXBsZS5jb20iLCJwb3J0IjoiNDQzIiwiaWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJhaWQiOiIwIiwibmV0IjoidGNwIiwidHlwZSI6Im5vbmUifQ=="
 
-func TestParseVLESSReality(t *testing.T) {
-	result, err := ParseVLESS(testURI + "?security=reality&sni=example.org&fp=chrome&pbk=" + realityKey + "&sid=abcd")
+func TestParseURIRealityVLESSWithSpx(t *testing.T) {
+	proxy, label, err := ParseURI(realityURI)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("REALITY 测试链接应可解析: %v", err)
 	}
-	opts := result["reality-opts"].(map[string]any)
-	if opts["public-key"] != realityKey || opts["short-id"] != "abcd" {
+	if proxy["type"] != "vless" || proxy["server"] != "203.0.113.10" || proxy["port"] != 443 {
+		t.Fatalf("proxy = %v", proxy)
+	}
+	if proxy["uuid"] != "00000000-0000-4000-8000-000000000002" || proxy["flow"] != "xtls-rprx-vision" {
+		t.Fatalf("uuid/flow = %v %v", proxy["uuid"], proxy["flow"])
+	}
+	opts, _ := proxy["reality-opts"].(map[string]any)
+	if opts == nil || opts["public-key"] != "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" || opts["short-id"] != "0123456789abcdef" {
 		t.Fatalf("reality-opts = %v", opts)
 	}
-}
-
-func TestParseVLESSWebSocketAndGRPC(t *testing.T) {
-	result, err := ParseVLESS(testURI + "?security=tls&type=ws&path=%2Fsocket&host=cdn.example.org&ed=2048&eh=Sec-WebSocket-Protocol")
-	if err != nil {
-		t.Fatal(err)
+	if label != "test-reality-node" {
+		t.Fatalf("label = %q", label)
 	}
-	opts := result["ws-opts"].(map[string]any)
-	if opts["path"] != "/socket" || opts["max-early-data"] != 2048 || opts["early-data-header-name"] != "Sec-WebSocket-Protocol" {
-		t.Fatalf("ws-opts = %v", opts)
-	}
-	if headers := opts["headers"].(map[string]any); headers["Host"] != "cdn.example.org" {
-		t.Fatalf("headers = %v", headers)
-	}
-	result, err = ParseVLESS(testURI + "?security=tls&type=grpc&serviceName=service&mode=gun")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if grpc := result["grpc-opts"].(map[string]any); grpc["grpc-service-name"] != "service" {
-		t.Fatalf("grpc-opts = %v", grpc)
+	if port := proxy["port"]; port != 443 {
+		t.Fatalf("端口应为整数, got %T %v", port, port)
 	}
 }
 
-func TestParseVLESSInvalidParametersNeverSilentlyIgnored(t *testing.T) {
-	suffixes := []string{
-		"?unknown=secret", "?type=ws&type=tcp", "?security=tls&pbk=secret",
-		"?security=reality", "?type=xhttp", "?flow=xtls-rprx-vision", "?allowInsecure=1",
-		"?security=tls&allowInsecure=yes", "?type=grpc&serviceName=a&mode=multi", "?type=tcp&path=%2F",
-		"?security=tls&alpn=", "?type=ws&path=%00", "?type=ws&eh=test", "?type=ws&path=%ZZ",
-	}
-	for _, suffix := range suffixes {
-		_, err := ParseVLESS(testURI + suffix)
-		if err == nil {
-			t.Fatalf("%s: 期望报错", suffix)
+func TestParseURIHysteria2BothSchemes(t *testing.T) {
+	for _, uri := range []string{
+		"hysteria2://letmein@example.com:443/?sni=example.com&insecure=1#hy2-node",
+		"hy2://letmein@example.com:8443/?obfs=salamander&obfs-password=obpass#hy2-short",
+	} {
+		proxy, label, err := ParseURI(uri)
+		if err != nil {
+			t.Fatalf("%s: %v", uri[:12], err)
 		}
-		if strings.Contains(err.Error(), "secret") {
-			t.Fatalf("%s: 错误回显了凭据: %v", suffix, err)
+		if proxy["type"] != "hysteria2" || proxy["password"] != "letmein" || label == "" {
+			t.Fatalf("proxy = %v label = %q", proxy, label)
+		}
+		if proxy["port"] != 443 && proxy["port"] != 8443 {
+			t.Fatalf("port = %v", proxy["port"])
+		}
+		// 空字符串字段应被清理
+		for key, value := range proxy {
+			if text, ok := value.(string); ok && text == "" {
+				t.Fatalf("残留空字段 %s", key)
+			}
 		}
 	}
 }
 
-func TestParseVLESSInvalidURIDoesNotEchoCredentials(t *testing.T) {
+func TestParseURIVMessTrojanShadowsocks(t *testing.T) {
+	cases := []struct {
+		uri       string
+		proxyType string
+	}{
+		{vmessURI, "vmess"},
+		{"trojan://password123@example.com:443?sni=example.com#trojan-node", "trojan"},
+		{"ss://YWVzLTI1Ni1nY206cGFzc3dvcmQ@example.com:8388#ss-node", "ss"},
+		{"ssr://ZXhhbXBsZS5jb206NDQzOm9yaWdpbjphZXMtMjU2LWNmYjpwbGFpbjpjR0Z6Y3c9PS8/cmVtYXJrcz1jM055NklxQzU0SzU", "ssr"},
+	}
+	for _, c := range cases {
+		proxy, _, err := ParseURI(c.uri)
+		if err != nil {
+			t.Fatalf("%s: %v", c.proxyType, err)
+		}
+		if proxy["type"] != c.proxyType {
+			t.Fatalf("type = %v, 期望 %s", proxy["type"], c.proxyType)
+		}
+		if proxy["server"] == "" || validPort(proxy["port"]) == 0 {
+			t.Fatalf("server/port 缺失: %v", proxy)
+		}
+	}
+}
+
+func TestParseURIRejectsInvalidWithoutEchoingCredentials(t *testing.T) {
 	uris := []string{
-		"trojan://secret@example.com:443",
-		"vless://secret@example.com:443",
-		strings.Replace(testURI, ":443", ":70000", 1),
-		strings.Replace(testURI, "example.com", "bad host", 1),
-		strings.Replace(testURI, ":443", "", 1),
-		testURI + "\n",
+		"",
+		"unknown://secret@example.com:443",
+		"vless://secret@example.com:443", // 非法 UUID → 内核解析失败
+		"vless://00000000-0000-4000-8000-000000000001@example.com:notaport",
+		"socks5://user:pass@127.0.0.1:1080",                                   // 不支持的协议
+		"http://user@127.0.0.1:8080",                                          // 不支持的协议
+		"hysteria2://",                                                        // 缺少主机
+		"vless://00000000-0000-4000-8000-000000000001@example.com:443#no\nde", // 中间控制字符
 	}
 	for _, uri := range uris {
-		_, err := ParseVLESS(uri)
+		_, _, err := ParseURI(uri)
 		if err == nil {
 			t.Fatalf("%q: 期望报错", uri)
 		}
@@ -102,30 +107,18 @@ func TestParseVLESSInvalidURIDoesNotEchoCredentials(t *testing.T) {
 	}
 }
 
-func TestParseVLESSIPv6(t *testing.T) {
-	result, err := ParseVLESS(strings.Replace(testURI, "example.com", "[2001:db8::1]", 1))
+func TestParseURILabelUsedForDisplayOnly(t *testing.T) {
+	// 备注名只是展示信息；Additions 会强制改名为 hermit-<id>
+	proxy, _, _ := ParseURI(realityURI)
+	if proxy["name"] != "test-reality-node" {
+		t.Fatalf("name = %v", proxy["name"])
+	}
+	manual := Mapping{ID: "m9", Port: 18090, Source: SourceManualURI, Credential: "x", Enabled: true}
+	listeners, proxies, err := Additions([]Mapping{manual}, nil, map[string]map[string]any{"m9": proxy})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result["server"] != "2001:db8::1" {
-		t.Fatalf("server = %v", result["server"])
-	}
-}
-
-func TestParseVLESSDefaultsAndUUIDCanonicalization(t *testing.T) {
-	result, err := ParseVLESS("vless://00000000-0000-4000-8000-000000000001@example.com:443?udp=0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result["udp"] != false || result["network"] != "tcp" || result["tls"] != nil {
-		t.Fatalf("默认值异常: %v", result)
-	}
-	// 大写 UUID 规范化为小写
-	result, err = ParseVLESS("vless://00000000-0000-4000-8000-00000000000A@example.com:443")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if result["uuid"] != "00000000-0000-4000-8000-00000000000a" {
-		t.Fatalf("uuid = %v", result["uuid"])
+	if proxies[0]["name"] != "hermit-m9" || listeners[0].Proxy != "hermit-m9" {
+		t.Fatalf("生成的对象名 = %v / %v", proxies[0]["name"], listeners[0].Proxy)
 	}
 }

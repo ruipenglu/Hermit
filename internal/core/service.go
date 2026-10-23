@@ -231,9 +231,13 @@ func (s *Service) SaveMapping(input MappingInput) (PublicState, error) {
 		item.Target = input.Target
 	case SourceManualURI:
 		if input.URI != "" {
-			if _, err := ParseVLESS(input.URI); err != nil {
+			proxy, label, err := ParseURI(input.URI)
+			if err != nil {
 				return PublicState{}, err
 			}
+			_ = proxy
+			// 备注名仅用于界面展示，凭据仍加密保存完整 URI
+			item.Target = label
 			item.Credential, err = s.Store.Vault.Encrypt(strings.TrimSpace(input.URI))
 			if err != nil {
 				return PublicState{}, err
@@ -320,7 +324,7 @@ func (s *Service) manual(state State) (map[string]map[string]any, error) {
 		if err != nil {
 			return nil, err
 		}
-		proxy, err := ParseVLESS(plain)
+		proxy, _, err := ParseURI(plain)
 		if err != nil {
 			return nil, err
 		}

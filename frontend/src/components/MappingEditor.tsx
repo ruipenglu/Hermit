@@ -93,7 +93,7 @@ export function MappingEditor(props: EditorProps) {
               <button className={draft.source === 'active-profile' ? 'active' : ''}
                 onClick={() => patch({ source: 'active-profile' })}>活动节点</button>
               <button className={draft.source === 'manual-uri' ? 'active' : ''}
-                onClick={() => patch({ source: 'manual-uri' })}>VLESS URI</button>
+                onClick={() => patch({ source: 'manual-uri' })}>分享链接</button>
             </div>
           </div>
 
@@ -121,7 +121,7 @@ export function MappingEditor(props: EditorProps) {
           ) : (
             <div className="field">
               <label className="field-label">
-                VLESS URI
+                分享链接 URI
                 <button className="icon-btn" style={{ marginLeft: 6, verticalAlign: -6 }} aria-label="显示/隐藏"
                   onClick={() => setDraft((c) => ({ ...c, showURI: !c.showURI }))}>
                   <Icon.Eye />
@@ -134,9 +134,9 @@ export function MappingEditor(props: EditorProps) {
               )}
               <textarea className="textarea" spellCheck={false}
                 style={draft.showURI ? undefined : ({ '-webkit-text-security': 'disc' } as React.CSSProperties)}
-                placeholder="vless://uuid@example.com:443?security=tls…" value={draft.uri}
+                placeholder="vless://…、hy2://…、ss://…" value={draft.uri}
                 onChange={(e) => patch({ uri: e.target.value })} />
-              <span className="field-hint">仅支持 VLESS（TCP / WS / gRPC · TLS / REALITY）；校验失败会明确报错，不静默忽略参数。</span>
+              <span className="field-hint">支持 VLESS / VMess / Trojan / Shadowsocks(R) / Hysteria / Hysteria2 / TUIC，解析与 Mihomo 内核同源。</span>
             </div>
           )}
 

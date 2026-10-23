@@ -50,6 +50,6 @@ go test ./...         # 核心测试
 
 ## 兼容与验收边界
 
-已实测 Clash Verge Rev 2.5.8 + Mihomo v1.19.32。控制接口仅使用本地 Unix socket。活动节点排除策略组和内置 DIRECT / REJECT 等；手动 URI 支持 VLESS TCP / TLS / REALITY / WebSocket / gRPC，不支持的参数明确报错。
+已实测 Clash Verge Rev 2.5.8 + Mihomo v1.19.32。控制接口仅使用本地 Unix socket。活动节点排除策略组和内置 DIRECT / REJECT 等；手动 URI 解析直接复用 Mihomo 内核的分享链接转换器（`common/convert`，与订阅转换同一套代码），支持 VLESS / VMess / Trojan / Shadowsocks / ShadowsocksR / Hysteria / Hysteria2 / TUIC，链接备注自动作为节点显示名。
 
 本轮验证：核心单测与假环境集成测试、真实环境只读检查（doctor / nodes / 读取旧版真实数据）、浏览器 UI 走查、打包应用启动。真实 Clash 写入（启用/停用/测试）、Developer ID 签名与公证、Intel 构建不纳入本轮，详见 [PLAN.md](PLAN.md)。

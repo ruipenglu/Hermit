@@ -56,7 +56,7 @@ func TestAdditionsForDisabledAndManual(t *testing.T) {
 		t.Fatalf("停用映射不应生成内容: %v %v %v", listeners, proxies, err)
 	}
 	manual := Mapping{ID: "m1", Port: 18081, Source: SourceManualURI, Credential: "x", Enabled: true}
-	parsed, _ := ParseVLESS(testURI)
+	parsed, _, _ := ParseURI(testURI)
 	listeners, proxies, err = Additions([]Mapping{manual}, nil, map[string]map[string]any{"m1": parsed})
 	if err != nil {
 		t.Fatal(err)

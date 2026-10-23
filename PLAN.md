@@ -14,7 +14,7 @@
 ## 需求要点（重写必须覆盖）
 
 1. 总开关：启用 = 备份原脚本 → 合成 → 校验 → 重载 → 监听核验；关闭 = 恢复原脚本并移除监听，保留映射；重新启用幂等。
-2. 映射 CRUD：端口 1024–65535 整数唯一且未占用；来源为活动原子节点（排除策略组/内置）或手动 VLESS URI（严格参数校验，未知参数报错不忽略）；启用中增删改自动应用，关闭时仅保存。
+2. 映射 CRUD：端口 1024–65535 整数唯一且未占用；来源为活动原子节点（排除策略组/内置）或手动分享链接（解析复用 Mihomo 内核转换器，支持 VLESS / VMess / Trojan / SS / SSR / Hysteria / Hysteria2 / TUIC，备注作显示名）；启用中增删改自动应用，关闭时仅保存。
 3. 应用管线：运行基线核对（端口/模式/节点）、名称与端口冲突检查、`mihomo -t` 校验、原子写脚本、Unix socket 重载、恢复策略组选择、监听核验；组合脚本必须与「注入原结果」等价，否则拒绝接管。
 4. 事务与恢复：加密日志、外部变更（脚本/生成配置/profile/目录）拒绝覆盖、回滚与 recover、损坏状态拒写。
 5. 连接测试：SOCKS5 握手 → HTTPS 访问 `api.ipify.org` → 按源端口匹配连接链 → verified / mismatch / unconfirmed；历史保留 100 条且不含凭据。
@@ -52,6 +52,8 @@
 - 阶段 7（服务绑定）：app.Service 以互斥锁串行全部操作，编排「保存自动应用」「保存并测试」「删除自动应用」「总开关」；环境变量 HERMIT_DATA_DIR / HERMIT_CLASH_DIR 支持隔离测试。TS 绑定生成 10 方法 7 模型；前端 api 适配层在浏览器自动切换 mock（状态/节点/诊断/保存/测试/删除/开关/恢复/剪贴板完整可走查）。`wails3 build` 产物启动正常。已知差异：v3 beta.34 无窗口关闭拦截钩子，无法像旧版那样在退出前等待在途事务；以事务日志 + 启动后恢复提示兜底（核心本就为中断设计）。
 - 阶段 8（现代 UI）：全新设计（非照搬旧 SwiftUI 表格）：侧栏导航 + 状态卡（总开关/恢复按钮）+ 卡片式映射列表（端口等宽字体、状态药丸、最近测试行、测试/复制 URL/编辑/删除）+ 弹窗编辑器（分段来源切换、节点搜索选择、URI 圆点遮蔽输入、保存并测试内嵌结果面板与代理链）+ 历史（代理链展开）+ 环境（键值卡与恢复入口）+ 底部活动栏与 toast，明暗双主题。浏览器 mock 走查全部通过（四页 + 新增/编辑 + 保存并测试全流程 + 停用映射测试按钮禁用），视觉模型检查无重叠/溢出。修复两处自测发现的问题：浏览器环境检测误判（改用 window.wails.invokeAsync）、onClick 事件对象透传导致的渲染崩溃。
 - 阶段 9（打包与收尾）：品牌图标沿用旧版 icns（iconutil 提取 1024px）；`wails3 package` 产出 `bin/hermit.app`（arm64、本地临时签名，codesign --verify 通过，Bundle ID local.hermit.app，v1.1.0），打包应用启动窗口正常。真实环境只读检查通过：doctor（Clash Verge Rev 2.5.8 / Mihomo v1.19.32 / local-unix-socket）、nodes（含 emoji 中文名节点）、status 直接读取旧版写入的**真实生产数据**（状态推导正确，全程未触碰钥匙串），跨版本数据兼容在生产环境验证。修复真实检查发现的问题：NewStore 空参数未回退默认目录。Python/Swift 旧实现、PyInstaller 配置与旧构建脚本已移除（git 历史可查），.gitignore 收敛为 Go/Node。
+
+- 需求变更（手动 URI 协议扩展）：按用户要求放弃手写 VLESS 严格解析，改用 Mihomo 内核自带的分享链接转换器（`github.com/metacubex/mihomo/common/convert`，v1.19.3，与本机内核同源），支持 VLESS / VMess / Trojan / Shadowsocks / ShadowsocksR / Hysteria / Hysteria2(hy2) / TUIC；REALITY + vision + spx 参数组合解析通过，链接备注自动作为映射显示名（仅展示，凭据仍加密保存完整 URI）。转换器输出经 JSON 往返统一类型（修正 []string 导致的组合等价比较失败）、端口规范化为整数、空字符串字段清理、VLESS UUID 形态前置校验；不支持的协议（含 http/socks5，按用户确认不额外支持）明确报错且不回显 URI。核心测试更新后 59 项全部通过。
 
 ## 未验收与已知限制
 
