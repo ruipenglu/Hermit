@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from './api'
 import type { NodeInfo, PublicState } from './api'
-import { Sidebar } from './components/Sidebar'
 import { StatusHeader } from './components/StatusHeader'
 import { Toasts, type Toast } from './components/Toasts'
 import { MappingsPage } from './pages/Mappings'
 import { NodesPage } from './pages/Nodes'
-import { HistoryPage } from './pages/History'
-import { EnvironmentPage } from './pages/Environment'
 import { MappingEditor, type EditorDraft } from './components/MappingEditor'
 
-export type Page = 'mappings' | 'nodes' | 'history' | 'environment'
+type Page = 'mappings' | 'nodes'
 
 const emptyState: PublicState = {
   enabled: false, revision: 0, appliedRevision: null,
@@ -22,8 +19,6 @@ function App() {
   const [state, setState] = useState<PublicState>(emptyState)
   const [nodes, setNodes] = useState<NodeInfo[]>([])
   const [nodesError, setNodesError] = useState('')
-  const [environment, setEnvironment] = useState<Record<string, any> | null>(null)
-  const [environmentError, setEnvironmentError] = useState('')
   const [busy, setBusy] = useState(false)
   const [activity, setActivity] = useState('')
   const [editor, setEditor] = useState<EditorDraft | null>(null)
@@ -53,13 +48,6 @@ function App() {
       setNodes([])
       setNodesError(String(error))
     }
-    try {
-      setEnvironment(await api.doctor())
-      setEnvironmentError('')
-    } catch (error) {
-      setEnvironment(null)
-      setEnvironmentError(String(error))
-    }
   }, [])
 
   useEffect(() => {
@@ -79,19 +67,26 @@ function App() {
     setActivity(activityText)
     try {
       const result = await action()
-      if (result && typeof result === 'object' && 'state' in result && result.state) setState(result.state)
+      if (result && typeof result === 'object') {
+        if ('state' in result && result.state) setState(result.state)
+        else if ('mappings' in result) setState(result)
+      }
       if (done) done(result)
       return result
     } catch (error) {
       toast(String(error), 'error')
-      void refresh(false)
       return null
     } finally {
+      try {
+        setState(await api.status())
+      } catch (error) {
+        setState((s) => ({ ...s, status: 'unavailable', errors: [String(error)] }))
+      }
       busyRef.current = false
       setBusy(false)
       setActivity('')
     }
-  }, [refresh, toast])
+  }, [toast])
 
   const newMapping = useCallback((target = '') => {
     const used = new Set((state.mappings ?? []).map((m) => m.port))
@@ -125,7 +120,7 @@ function App() {
 
   const setEnabled = useCallback((enabled: boolean) => {
     void perform(enabled ? '正在启用固定端口…' : '正在关闭并恢复原脚本…', () => api.setEnabled(enabled),
-      enabled ? () => toast('固定端口已应用。可点击测试确认指定出口。') : () => toast('已关闭固定端口并恢复原脚本。'))
+      enabled ? () => toast('端口映射已启用') : () => toast('端口映射已关闭'))
   }, [perform, toast])
 
   const testMapping = useCallback(async (id: string) => {
@@ -147,39 +142,44 @@ function App() {
 
   return (
     <div className="app">
-      <Sidebar page={page} onChange={setPage} connected={environment !== null} mappingCount={(state.mappings ?? []).length} />
-      <div className="main">
+      <header className="app-header">
+        <div className="brand">Hermit</div>
         <StatusHeader state={state} busy={busy} onSetEnabled={setEnabled} onRecover={() =>
           void perform('正在恢复变更前状态…', () => api.recover(), () => toast('已恢复到变更前状态。'))
         } />
-        <div className="main-scroll">
+      </header>
+      <nav className="nav" aria-label="主导航">
+        <button className={`nav-item ${page === 'mappings' ? 'active' : ''}`} aria-current={page === 'mappings' ? 'page' : undefined}
+          onClick={() => setPage('mappings')}>端口映射<span className="count">{(state.mappings ?? []).length}</span></button>
+        <button className={`nav-item ${page === 'nodes' ? 'active' : ''}`} aria-current={page === 'nodes' ? 'page' : undefined}
+          onClick={() => setPage('nodes')}>活动节点<span className="count">{nodes.length}</span></button>
+      </nav>
+      <main className="main-scroll">
+        <div className="content">
+          {(state.recoveryRequired || (state.errors ?? []).length > 0 || ['saved-pending-apply', 'degraded', 'unavailable', 'conflict'].includes(state.status)) && (
+            <div className="notice-banner" role="alert">
+              {state.recoveryRequired ? '上次操作未完成，请先恢复后继续。' : (state.errors ?? []).join('；') || {
+                'saved-pending-apply': '更改尚未生效，请重新启用端口映射。',
+                degraded: '部分端口或节点与预期不一致，请检查映射。',
+                unavailable: '无法连接 Clash，请确认其正在运行。',
+                conflict: '全局脚本存在冲突，请使用原数据目录恢复。',
+              }[state.status]}
+            </div>
+          )}
           {page === 'mappings' && (
             <MappingsPage state={state} busy={busy} onAdd={newMapping} onEdit={editMapping}
               onDelete={(id) =>
                 void perform('正在删除并自动应用…', () => api.deleteMapping(id), () => toast('映射已删除。'))
               }
-              onTest={(id) => { void testMapping(id); setPage('history') }}
+              onTest={(id) => { void testMapping(id) }}
               onCopy={copyURL} />
           )}
           {page === 'nodes' && (
             <NodesPage nodes={nodes} error={nodesError} busy={busy} onBind={(name) => { setPage('mappings'); newMapping(name) }} onRefresh={() => void refresh()} />
           )}
-          {page === 'history' && <HistoryPage state={state} />}
-          {page === 'environment' && (
-            <EnvironmentPage environment={environment} error={environmentError} recoveryRequired={state.recoveryRequired}
-              onRecover={() => { void perform('正在恢复变更前状态…', () => api.recover(), () => toast('已恢复到变更前状态。')) }}
-              onRefresh={() => void refresh()} />
-          )}
         </div>
-        <div className="statusbar">
-          <div className="activity">
-            {busy && <span className="spinner" />}
-            <span className="notice">{activity || (state.status === 'loading' ? '正在读取状态…' : '本地优先 · 凭据加密保存在本机')}</span>
-          </div>
-          <div className="grow" />
-          <span>127.0.0.1 · HTTP / SOCKS5</span>
-        </div>
-      </div>
+      </main>
+      {busy && <div className="activity" role="status"><span className="spinner" />{activity}</div>}
       {editor && (
         <MappingEditor
           draft={editor}

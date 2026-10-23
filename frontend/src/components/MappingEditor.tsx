@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { NodeInfo, SaveTestResult, TestRecord } from '../api'
 import { Icon } from '../icons'
 import { ChainView, TestSummary } from './TestViews'
@@ -28,9 +28,23 @@ export function MappingEditor(props: EditorProps) {
   const [draft, setDraft] = useState<EditorDraft>(props.draft)
   const [test, setTest] = useState<TestRecord | null>(null)
   const [nodeQuery, setNodeQuery] = useState('')
+  const [hasCredential, setHasCredential] = useState(props.hasCredential)
+  const modalRef = useRef<HTMLDivElement>(null)
+  const testRef = useRef<HTMLDivElement>(null)
   const editing = draft.id !== undefined
 
-  useEffect(() => { setDraft(props.draft) }, [props.draft])
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null
+    modalRef.current?.focus()
+    return () => previous?.focus()
+  }, [])
+
+  useEffect(() => {
+    if (test) {
+      testRef.current?.focus()
+      testRef.current?.scrollIntoView({ block: 'nearest' })
+    }
+  }, [test])
 
   const patch = (part: Partial<EditorDraft>) => {
     setDraft((current) => ({ ...current, ...part }))
@@ -44,7 +58,7 @@ export function MappingEditor(props: EditorProps) {
 
   const canSave = portValid && !props.busy &&
     (draft.source === 'manual-uri' || draft.target !== '') &&
-    (draft.source === 'active-profile' || draft.uri !== '' || props.hasCredential)
+    (draft.source === 'active-profile' || draft.uri !== '' || hasCredential)
 
   const filteredNodes = useMemo(() => {
     const query = nodeQuery.trim().toLowerCase()
@@ -56,63 +70,70 @@ export function MappingEditor(props: EditorProps) {
     const result = await props.onSave(draft, testing)
     if (!result) return
     if (testing && result.test) {
+      setHasCredential(result.mapping.hasCredential)
       setTest(result.test)
       setDraft((current) => ({ ...current, id: result.mapping.id, uri: '' }))
     } else if (!testing) {
-      props.onToast(result.state.enabled ? '映射已保存并自动应用。' : '映射已保存，开启总开关后生效。')
+      props.onToast(result.state.enabled ? '映射已保存' : '已保存，启用端口映射后生效')
       props.onDone()
     }
   }
 
   return (
     <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !props.busy) props.onCancel() }}>
-      <div className="modal" onKeyDown={(e) => {
+      <div className="modal" ref={modalRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="editor-title" onKeyDown={(e) => {
+        if (e.key === 'Tab') {
+          const elements = e.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled)')
+          const first = elements[0]
+          const last = elements[elements.length - 1]
+          if (e.shiftKey && (document.activeElement === first || document.activeElement === e.currentTarget)) { e.preventDefault(); last?.focus() }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus() }
+        }
         if (e.key === 'Escape' && !props.busy) test ? props.onDone() : props.onCancel()
         if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void submit(false)
       }}>
         <div className="modal-head">
-          {editing ? '编辑映射' : '新增映射'}
-          <span className="sub">{editing ? `ID ${draft.id}` : '绑定一个本地端口到指定节点'}</span>
+          <h2 id="editor-title">{editing ? '编辑映射' : '新增映射'}</h2>
           <button className="icon-btn" onClick={test ? props.onDone : props.onCancel} disabled={props.busy} aria-label="关闭">
             <Icon.Close />
           </button>
         </div>
         <div className="modal-body">
           <div className="field">
-            <label className="field-label">监听端口</label>
-            <input className="input mono" value={draft.port} inputMode="numeric" placeholder="18080"
-              onChange={(e) => patch({ port: e.target.value.replace(/[^\d]/g, '') })} autoFocus={!editing} />
-            <span className="field-hint">
-              {draft.port && !portValid ? '端口必须是 1024–65535 的整数' : '本地回环地址 127.0.0.1，HTTP 与 SOCKS5 共用'}
-            </span>
+            <label className="field-label" htmlFor="mapping-port">本地端口</label>
+            <div className="port-input"><span className="mono">127.0.0.1 :</span><input id="mapping-port" className="input mono" value={draft.port} inputMode="numeric" placeholder="18080"
+              onChange={(e) => patch({ port: e.target.value.replace(/[^\d]/g, '') })} aria-invalid={!!draft.port && !portValid} aria-describedby={draft.port && !portValid ? 'port-error' : undefined} /></div>
+            {draft.port && !portValid && <span className="field-hint error-text" id="port-error">端口范围为 1024–65535</span>}
           </div>
 
           <div className="field">
             <label className="field-label">节点来源</label>
             <div className="segmented">
               <button className={draft.source === 'active-profile' ? 'active' : ''}
+                aria-pressed={draft.source === 'active-profile'}
                 onClick={() => patch({ source: 'active-profile' })}>活动节点</button>
               <button className={draft.source === 'manual-uri' ? 'active' : ''}
+                aria-pressed={draft.source === 'manual-uri'}
                 onClick={() => patch({ source: 'manual-uri' })}>分享链接</button>
             </div>
           </div>
 
           {draft.source === 'active-profile' ? (
             <div className="field">
-              <label className="field-label">目标节点 <span className="tiny">排除策略组与内置出站</span></label>
+              <label className="field-label" htmlFor="node-search">目标节点</label>
               <div className="search">
                 <Icon.Search />
-                <input className="input" placeholder="搜索节点…" value={nodeQuery}
+                <input id="node-search" className="input" placeholder="搜索节点…" value={nodeQuery}
                   onChange={(e) => setNodeQuery(e.target.value)} />
               </div>
-              <div className="card" style={{ maxHeight: 200, overflowY: 'auto' }}>
+              <div className="node-options">
                 {filteredNodes.length === 0 && <div className="empty" style={{ padding: '18px' }}>没有匹配的节点</div>}
                 {filteredNodes.map((node) => (
-                  <button key={node.name} className="node-row" style={{ width: '100%', background: 'transparent', border: 0, borderBottom: '1px solid var(--line)', cursor: 'pointer', textAlign: 'left', color: 'inherit', font: 'inherit' }}
+                  <button key={node.name} className={`node-option ${draft.target === node.name ? 'selected' : ''}`} aria-pressed={draft.target === node.name}
                     onClick={() => patch({ target: node.name })}>
-                    <span className={`dot ${draft.target === node.name ? 'ok' : ''}`} />
+                    <span className="selection-mark">{draft.target === node.name && <Icon.Check />}</span>
                     <span className="name">{node.name}</span>
-                    <span className="pill outline">{node.type}</span>
+                    <span className="protocol">{node.type}</span>
                   </button>
                 ))}
               </div>
@@ -120,23 +141,18 @@ export function MappingEditor(props: EditorProps) {
             </div>
           ) : (
             <div className="field">
-              <label className="field-label">
-                分享链接 URI
-                <button className="icon-btn" style={{ marginLeft: 6, verticalAlign: -6 }} aria-label="显示/隐藏"
-                  onClick={() => setDraft((c) => ({ ...c, showURI: !c.showURI }))}>
-                  <Icon.Eye />
-                </button>
-              </label>
-              {props.hasCredential && draft.uri === '' && (
+              <div className="row"><label className="field-label" htmlFor="mapping-uri">分享链接</label>
+                <button className="text-btn" aria-pressed={draft.showURI} onClick={() => setDraft((c) => ({ ...c, showURI: !c.showURI }))}>{draft.showURI ? '隐藏' : '显示'}</button>
+              </div>
+              {hasCredential && draft.uri === '' && (
                 <div className="field-hint" style={{ marginBottom: 6 }}>
-                  已保存加密凭据；留空保留原节点，输入新 URI 可替换。
+                  留空保留已保存的节点。
                 </div>
               )}
-              <textarea className="textarea" spellCheck={false}
-                style={draft.showURI ? undefined : ({ '-webkit-text-security': 'disc' } as React.CSSProperties)}
+              <textarea id="mapping-uri" className={`textarea ${draft.showURI ? '' : 'masked'}`} spellCheck={false}
                 placeholder="vless://…、hy2://…、ss://…" value={draft.uri}
                 onChange={(e) => patch({ uri: e.target.value })} />
-              <span className="field-hint">支持 VLESS / VMess / Trojan / Shadowsocks(R) / Hysteria / Hysteria2 / TUIC，解析与 Mihomo 内核同源。</span>
+              <span className="field-hint">凭据加密保存在本机。</span>
             </div>
           )}
 
@@ -151,7 +167,7 @@ export function MappingEditor(props: EditorProps) {
           </div>
 
           {test && (
-            <div className="test-result">
+            <div className="test-result" ref={testRef} tabIndex={-1} role="status" aria-label="连接测试结果">
               <TestSummary record={test} />
               <ChainView chain={test.actualChain ?? []} expected={test.expectedProxy} />
             </div>
@@ -163,8 +179,7 @@ export function MappingEditor(props: EditorProps) {
           <button className="btn quiet" onClick={test ? props.onDone : props.onCancel} disabled={props.busy}>
             {test ? '完成' : '取消'}
           </button>
-          <button className="btn" onClick={() => void submit(true)} disabled={!canSave}>
-            <Icon.Play /> {test ? '再次测试' : '保存并测试'}
+          <button className="btn" onClick={() => void submit(true)} disabled={!canSave || !draft.enabled}> {test ? '再次测试' : '保存并测试'}
           </button>
           <button className="btn primary" onClick={() => void submit(false)} disabled={!canSave}>
             保存
