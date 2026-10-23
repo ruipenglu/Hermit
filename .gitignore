@@ -1,9 +1,18 @@
+# 旧 Python/Swift 实现（阶段 9 移除后清理）
 .venv/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 *.egg-info/
-build/
-dist/
-.DS_Store
 .coverage
+
+# Wails / Go / Node 构建产物
+bin/
+.task
+build/windows/
+dist/
+frontend/dist/*
+!frontend/dist/.gitkeep
+frontend/node_modules
+
+.DS_Store
