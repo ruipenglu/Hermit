@@ -36,9 +36,6 @@ struct HermitApp: App {
             CommandGroup(after: .newItem) {
                 Button("刷新状态") { Task { await model.refresh() } }
                     .keyboardShortcut("r").disabled(model.busy)
-                Button("应用更改") { Task { await model.perform("apply") } }
-                    .keyboardShortcut(.return, modifiers: .command)
-                    .disabled(model.busy || !model.state.pending || model.state.recoveryRequired)
             }
         }
     }

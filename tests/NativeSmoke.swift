@@ -31,7 +31,7 @@ struct NativeSmoke {
         draft.port = "invalid"
         assert(draft.input == nil)
         model.busy = true
-        await model.testDraft(draft)
+        await model.saveDraft(draft, testing: true)
         assert(draft.mapping == nil && draft.testResult == nil)
         let busyRequest = await model.perform("enable")
         assert(!busyRequest)

@@ -79,10 +79,6 @@ struct ContentView: View {
                 Button("恢复未完成操作") { Task { await model.perform("recover") } }
                     .disabled(model.busy).accessibilityIdentifier("recover")
             } else {
-                if model.state.pending {
-                    Button("应用更改") { Task { await model.perform("apply") } }
-                        .disabled(model.busy).accessibilityIdentifier("apply")
-                }
                 Toggle("启用固定端口", isOn: Binding(get: { model.state.enabled }, set: { enabled in
                     Task { await model.perform(enabled ? "enable" : "disable") }
                 }))
@@ -148,7 +144,7 @@ struct ContentView: View {
                     }.width(210)
                 }.tableStyle(.inset(alternatesRowBackgrounds: true))
             }
-            HStack { Text("\(model.state.mappings.count) 条映射"); Spacer(); Text("保存后需应用更改；首次使用请开启总开关。") }
+            HStack { Text("\(model.state.mappings.count) 条映射"); Spacer(); Text("总开关开启时，保存后自动应用。") }
                 .font(.caption).foregroundStyle(.secondary).padding(16)
         }
     }
@@ -284,7 +280,7 @@ struct MappingEditor: View {
                 }
                 Section {
                     Button {
-                        Task { await model.testDraft(draft) }
+                        Task { await model.saveDraft(draft, testing: true) }
                     } label: {
                         Label(model.busy ? "正在处理…" : "保存并测试", systemImage: "play.circle")
                     }
@@ -314,8 +310,7 @@ struct MappingEditor: View {
                 Button("取消", role: .cancel) { draft.uri = ""; dismiss() }.keyboardShortcut(.cancelAction)
                 Button(draft.testResult == nil ? "保存映射" : "完成") {
                     if draft.testResult != nil { dismiss(); return }
-                    guard let input = draft.input else { model.error = "监听端口必须是 1024–65535 的整数"; return }
-                    Task { if await model.perform("save", data: input) { draft.uri = ""; dismiss() } }
+                    Task { if await model.saveDraft(draft) { dismiss() } }
                 }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent).accessibilityIdentifier("save-mapping")
             }.padding(20).disabled(model.busy)
         }

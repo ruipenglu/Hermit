@@ -220,8 +220,13 @@ final class ClientModel: ObservableObject {
                 page = .tests
             } else {
                 let _: EmptyReply = try await call(action, data: data, as: EmptyReply.self)
+                if action == "delete" {
+                    editor = nil
+                    do { let _: EmptyReply = try await call("apply", as: EmptyReply.self) }
+                    catch { throw ClientError(message: "映射已删除，但自动应用失败：" + error.localizedDescription) }
+                }
                 switch action {
-                case "save", "delete": notice = "映射已保存。开启总开关或应用更改后生效。"
+                case "delete": notice = "映射已删除。总开关开启时已自动应用。"
                 case "disable": notice = "已关闭固定端口并恢复原脚本。"
                 case "recover": notice = "已恢复到变更前状态。"
                 default: notice = "固定端口已应用。可点击测试确认指定出口。"
@@ -242,25 +247,33 @@ final class ClientModel: ObservableObject {
         editor = MappingDraft(port: port, target: target)
     }
 
-    func testDraft(_ draft: MappingDraft) async {
-        guard !busy, !terminationRequested else { return }
-        guard let input = draft.input else { error = "监听端口必须是 1024–65535 的整数"; return }
+    @discardableResult
+    func saveDraft(_ draft: MappingDraft, testing: Bool = false) async -> Bool {
+        guard !busy, !terminationRequested else { return false }
+        guard let input = draft.input else { error = "监听端口必须是 1024–65535 的整数"; return false }
         busy = true
-        activity = "正在保存、应用并验证连接…"
+        activity = testing ? "正在保存、应用并验证连接…" : "正在保存并自动应用…"
         draft.testResult = nil
+        var saved = false
         defer { finish() }
         do {
             let mapping = try await call("save", data: input, as: Mapping.self)
             draft.mapping = mapping
             draft.uri = ""
-            let _: EmptyReply = try await call("enable", as: EmptyReply.self)
-            let result = try await call("test", data: MappingInput(id: mapping.id), as: TestRecord.self)
-            draft.testResult = result
-            notice = result.message
+            saved = true
+            let _: EmptyReply = try await call(testing ? "enable" : "apply", as: EmptyReply.self)
+            if testing {
+                let result = try await call("test", data: MappingInput(id: mapping.id), as: TestRecord.self)
+                draft.testResult = result
+                notice = result.message
+            }
             state = try await call("status", as: CoreState.self)
+            if !testing { notice = state.enabled ? "映射已保存并自动应用。" : "映射已保存，开启总开关后生效。" }
+            return true
         } catch {
-            self.error = error.localizedDescription
+            self.error = saved ? "映射已保存，但后续操作失败：" + error.localizedDescription : error.localizedDescription
             if let current = try? await call("status", as: CoreState.self) { state = current }
+            return false
         }
     }
     func canTest(_ mapping: Mapping) -> Bool {
@@ -286,7 +299,7 @@ final class ClientModel: ObservableObject {
         case "loading": "正在读取状态"
         case "disabled": "固定端口尚未启用"
         case "applied": "固定端口已应用"
-        case "saved-pending-apply": "映射已保存，等待应用"
+        case "saved-pending-apply": "更改尚未生效"
         case "degraded": "运行状态需要检查"
         case "unavailable": "Clash 暂不可用"
         case "conflict": "全局脚本存在冲突"
@@ -297,7 +310,7 @@ final class ClientModel: ObservableObject {
 
     var statusDetail: String {
         if state.recoveryRequired { return "请恢复变更前状态，再继续操作。" }
-        if state.pending { return "当前运行的仍是上次应用的配置。" }
+        if state.pending { return "当前运行的仍是上次配置。保存映射时会自动重试，也可重新开启总开关。" }
         if state.enabled { return "监听检查仅证明入口可用，指定出口身份需通过连接测试确认。" }
         return "每个本地端口连接一个指定节点，现有分流保持不变。"
     }
