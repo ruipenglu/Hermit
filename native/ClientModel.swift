@@ -242,6 +242,13 @@ final class ClientModel: ObservableObject {
         return state.status == "applied" ? "已应用" : "需检查"
     }
 
+    func proxyLabel(_ name: String) -> String {
+        if let mapping = state.mappings.first(where: { $0.source == "manual-uri" && "hermit-" + $0.id == name }) {
+            return "手动 VLESS · \(mapping.port)"
+        }
+        return name
+    }
+
     var statusTitle: String {
         switch state.status {
         case "loading": "正在读取状态"

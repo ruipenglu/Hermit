@@ -36,6 +36,10 @@ with (app / 'Contents/Info.plist').open('wb') as stream:
         'NSHighResolutionCapable': True, 'NSPrincipalClass': 'NSApplication',
     }, stream)
 PY
+xcrun swiftc -swift-version 6 -warnings-as-errors -parse-as-library \
+  -target arm64-apple-macosx14.3 -framework SwiftUI -framework AppKit \
+  native/ClientModel.swift tests/NativeSmoke.swift -o build/native-smoke
+build/native-smoke dist/Hermit.app/Contents/Resources/core/hermit-core
 /usr/bin/codesign --force --deep --sign - dist/Hermit.app
 /usr/bin/codesign --verify --deep --strict dist/Hermit.app
 /usr/bin/ditto -c -k --sequesterRsrc --keepParent dist/Hermit.app dist/Hermit-v1.0-macos-arm64.zip

@@ -168,15 +168,15 @@ struct ContentView: View {
                     DisclosureGroup {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(record.message)
-                            Text("预期节点：" + record.expectedProxy)
-                            Text("实际代理链：" + (record.actualChain.isEmpty ? "未捕获" : record.actualChain.joined(separator: " → ")))
+                            Text("预期节点：" + model.proxyLabel(record.expectedProxy))
+                            Text("实际代理链：" + (record.actualChain.isEmpty ? "未捕获" : record.actualChain.map(model.proxyLabel).joined(separator: " → ")))
                         }.font(.callout).foregroundStyle(.secondary).textSelection(.enabled).padding(.vertical, 8)
                     } label: {
                         HStack {
                             Image(systemName: record.identityConfirmed && record.status == "verified" ? "checkmark.circle.fill" : "exclamationmark.circle")
                                 .foregroundStyle(record.status == "verified" ? Color.green : .orange)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("127.0.0.1:\(record.port)").font(.system(.body, design: .monospaced))
+                                Text("127.0.0.1:\(String(record.port))").font(.system(.body, design: .monospaced))
                                 Text(record.date).font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer()
