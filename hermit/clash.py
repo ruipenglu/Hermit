@@ -7,6 +7,7 @@ import shlex
 import socket
 import subprocess
 import tempfile
+from urllib.parse import quote
 
 import yaml
 
@@ -127,7 +128,24 @@ class Clash:
             Path(name).unlink(missing_ok=True)
 
     def reload(self, config):
+        selections = self.selections()
         self.request("PUT", "/configs?force=true", {"payload": yaml.safe_dump(config, allow_unicode=True, sort_keys=False)})
+        self.restore_selections(selections)
+
+    def selections(self):
+        return {name: proxy["now"] for name, proxy in self.request("GET", "/proxies").get("proxies", {}).items()
+                if proxy.get("type", "").lower() == "selector" and proxy.get("now")}
+
+    def restore_selections(self, selections):
+        available = self.request("GET", "/proxies").get("proxies", {})
+        for name, target in selections.items():
+            group = available.get(name)
+            if not group or target not in group.get("all", []):
+                raise HermitError("重载后原策略组选择不可恢复；请检查节点变化")
+            if group.get("now") != target:
+                self.request("PUT", "/proxies/" + quote(name, safe=""), {"name": target})
+        if self.selections() != selections:
+            raise HermitError("策略组选择恢复后校验失败")
 
     def doctor(self):
         try:
