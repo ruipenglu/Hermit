@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import Combine
 
@@ -128,12 +129,23 @@ struct ContentView: View {
                     }.width(80)
                     TableColumn("操作") { mapping in
                         HStack {
+                            Button {
+                                let url = "socks5://127.0.0.1:\(mapping.port)"
+                                NSPasteboard.general.clearContents()
+                                if NSPasteboard.general.setString(url, forType: .string) {
+                                    model.notice = "已复制 \(url)"
+                                } else {
+                                    model.error = "无法复制代理 URL，请重试。"
+                                }
+                            } label: { Label("复制 URL", systemImage: "doc.on.doc") }
+                                .help("复制 socks5://127.0.0.1:\(mapping.port)")
+                                .accessibilityIdentifier("copy-url-" + String(mapping.port))
                             Button("测试") { Task { await model.perform("test", data: MappingInput(id: mapping.id)) } }
                                 .disabled(!model.canTest(mapping)).accessibilityIdentifier("test-" + String(mapping.port))
                             Button("编辑") { model.editor = MappingDraft(mapping: mapping) }
                                 .disabled(model.busy).accessibilityIdentifier("edit-" + String(mapping.port))
                         }
-                    }.width(125)
+                    }.width(210)
                 }.tableStyle(.inset(alternatesRowBackgrounds: true))
             }
             HStack { Text("\(model.state.mappings.count) 条映射"); Spacer(); Text("保存后需应用更改；首次使用请开启总开关。") }
