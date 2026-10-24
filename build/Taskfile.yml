@@ -200,6 +200,7 @@ tasks:
     generates:
       - "darwin/icons.icns"
     cmds:
+      - mkdir -p windows
       - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico -iconcomposerinput appicon.icon -macassetdir darwin
 
   dev:frontend:

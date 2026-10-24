@@ -143,7 +143,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="brand">Hermit</div>
+        <div className="brand"><img src="/hermit.png" alt="" width={32} height={32} />Hermit</div>
         <StatusHeader state={state} busy={busy} onSetEnabled={setEnabled} onRecover={() =>
           void perform('正在恢复变更前状态…', () => api.recover(), () => toast('已恢复到变更前状态。'))
         } />
