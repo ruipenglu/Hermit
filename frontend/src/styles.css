@@ -259,10 +259,7 @@ tr:hover .port-copy svg, .port-copy:focus-visible svg { opacity: 1; }
 }
 .page-description { margin-top: 6px; color: var(--text-2); font-size: 12px; line-height: 1.6; }
 .mapping-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
-.mapping-toolbar .search { width: min(300px, 50%); }
-.copy-format { display: flex; align-items: center; gap: 10px; color: var(--text-2); font-size: 12px; white-space: nowrap; }
-select { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line-strong); padding: 7px 10px; border-radius: 6px; min-height: 36px; }
-select:focus-visible { outline: 2px solid var(--text-2); outline-offset: 3px; }
+.mapping-toolbar .search { width: min(300px, 100%); }
 .editor-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .editor-fields:disabled { opacity: .65; }
 .save-explanation { flex: none; margin: 12px 24px 0; padding: 10px 12px; border-radius: 6px; background: var(--card-quiet); font-size: 11px; line-height: 1.6; color: var(--text-2); }
@@ -270,7 +267,11 @@ select:focus-visible { outline: 2px solid var(--text-2); outline-offset: 3px; }
 @media (max-width: 560px) {
   .mapping-toolbar { flex-wrap: wrap; gap: 10px; }
   .mapping-toolbar .search { width: 100%; }
-  .copy-format { margin-left: auto; }
   .modal-foot .tiny { display: none; }
 }
 .notice-banner .btn { flex: none; }
+
+.copy-menu { position: fixed; z-index: 55; width: min(280px, calc(100vw - 32px)); padding: 5px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--card); box-shadow: 0 8px 24px #0002; }
+.copy-menu-item { display: flex; flex-direction: column; gap: 4px; width: 100%; border: 0; padding: 10px; border-radius: 5px; background: transparent; color: var(--text); text-align: left; font-size: 12px; }
+.copy-menu-item:hover, .copy-menu-item:focus-visible { background: var(--hover); outline: none; }
+.copy-menu-item .mono { font-size: 11px; color: var(--text-3); }

@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { PublicMapping, PublicState } from '../api'
 import { Icon } from '../icons'
+import { CopyAddress } from '../components/CopyAddress'
 import { ChainView, TestStatusPill, TestSummary } from '../components/TestViews'
 
 function mappingStatus(mapping: PublicMapping, state: PublicState): { label: string; tone: string } {
@@ -22,7 +23,6 @@ export function MappingsPage(props: {
   const [confirming, setConfirming] = useState<PublicMapping | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [protocol, setProtocol] = useState<'http' | 'socks5'>('socks5')
   const [testingId, setTestingId] = useState<string | null>(null)
   const resultRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -59,7 +59,6 @@ export function MappingsPage(props: {
       </div>
       {mappings.length > 0 && <div className="mapping-toolbar">
         <div className="search"><Icon.Search /><input className="input" aria-label="搜索映射" placeholder="搜索端口或节点…" value={query} onChange={(e) => setQuery(e.target.value)} /></div>
-        <label className="copy-format">复制地址格式<select value={protocol} onChange={(e) => setProtocol(e.target.value as 'http' | 'socks5')}><option value="socks5">SOCKS5</option><option value="http">HTTP</option></select></label>
       </div>}
       {props.state.status === 'loading' ? (
         <div className="empty" role="status"><span className="spinner" />正在读取映射…</div>
@@ -83,9 +82,7 @@ export function MappingsPage(props: {
                 return (
                   <Fragment key={mapping.id}>
                     <tr className={isExpanded ? 'selected' : ''}>
-                      <td data-label="本地端口"><button className="port-copy" onClick={() => props.onCopy(mapping.port, protocol)} aria-label={`复制端口 ${mapping.port} 的 ${protocol.toUpperCase()} 地址`} title={`复制 ${protocol}://127.0.0.1:${mapping.port}`}>
-                        <span className="mono">{mapping.port}</span><Icon.Copy />
-                      </button><div className="cell-secondary mono">127.0.0.1</div></td>
+                      <td data-label="本地端口"><CopyAddress port={mapping.port} onCopy={props.onCopy} /><div className="cell-secondary mono">127.0.0.1</div></td>
                       <td className="target-cell" data-label="目标节点"><div className="truncate" title={mapping.target || '手动节点'}>{mapping.target || '手动节点'}</div>
                         <div className="cell-secondary">{mapping.source === 'manual-uri' ? '分享链接' : '活动配置'}</div></td>
                       <td data-label="映射状态"><span className={`status-text ${status.tone}`}><span className="dot" />{status.label}</span></td>
