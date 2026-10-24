@@ -217,3 +217,69 @@ tr:hover .port-copy svg, .port-copy:focus-visible svg { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* 原生窗口按钮独占顶部拖拽区，品牌与内容保持同一左边界。 */
+.window-drag { height: 36px; flex: none; background: var(--card); --wails-draggable: drag; }
+.app-header { min-height: 96px; flex: none; padding: 16px 32px; gap: 24px; }
+.native .app-header { min-height: 82px; padding-top: 8px; }
+.brand { gap: 8px; font-size: 21px; letter-spacing: -.6px; flex: none; }
+.brand img { object-fit: contain; background: #fff; border-radius: 12px; }
+.brand-caption { display: block; margin-top: 1px; color: var(--text-3); font-size: 11px; letter-spacing: .3px; font-weight: 400; }
+.header-status { gap: 20px; padding: 10px 14px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--card-quiet); --wails-draggable: no-drag; }
+.header-status.green { background: var(--green-weak); border-color: color-mix(in srgb, var(--green) 25%, var(--line)); }
+.header-status.amber { background: var(--amber-weak); }
+.header-status.red { background: var(--red-weak); }
+.master-copy { display: flex; flex-direction: column; gap: 3px; }
+.master-title { font-size: 12px; font-weight: 600; }
+.master-description { color: var(--text-2); font-size: 11px; }
+.master-toggle { display: flex; align-items: center; gap: 10px; border: 0; padding: 8px 0 8px 8px; background: transparent; color: var(--text); border-radius: 6px; }
+.master-state { font-size: 12px; min-width: 36px; font-weight: 600; }
+.header-status.green .master-state { color: var(--green); }
+.master-track { width: 44px; height: 26px; padding: 3px; border-radius: 20px; background: var(--line-strong); transition: background .15s; }
+.master-track::after { content: ''; display: block; width: 20px; height: 20px; background: #fff; border-radius: 50%; box-shadow: 0 1px 3px #0003; transition: transform .15s; }
+.master-track.on { background: #27805b; }
+.master-track.on::after { transform: translateX(18px); }
+.nav { padding: 0 32px; gap: 28px; height: 48px; }
+.nav-item { font-size: 13px; }
+.content { max-width: none; padding: 28px 32px 48px; }
+h1 { font-size: 23px; }
+.page-head { margin-bottom: 22px; }
+.btn { min-height: 36px; }
+.btn.compact { min-height: 30px; }
+.icon-btn { width: 32px; height: 32px; }
+th { font-size: 12px; height: 40px; }
+td { font-size: 13px; height: 82px; }
+.cell-secondary, .pill, .tiny, .field-hint, .table-foot { font-size: 11px; }
+.status-text, .field-label, .protocol { font-size: 12px; }
+.table-wrap { border-radius: 12px; }
+.port-copy { font-size: 14px; }
+.port-copy svg { opacity: .65; }
+.input, .textarea { min-height: 38px; font-size: 13px; }
+.modal { width: min(520px, 100%); border-radius: 14px; }
+@media (max-width: 900px) {
+  .app-header { padding-left: 24px; padding-right: 24px; }
+  .nav { padding-left: 24px; padding-right: 24px; }
+  .content { padding: 24px 24px 40px; }
+}
+@media (max-width: 760px) {
+  .mapping-table thead { display: none; }
+  .mapping-table, .mapping-table tbody { display: block; min-width: 0; }
+  .mapping-table tbody > tr:not(.detail-row) { display: grid; grid-template-columns: 1fr 1.5fr; padding: 14px 16px; gap: 12px 16px; border-bottom: 1px solid var(--line); }
+  .mapping-table td { display: block; height: auto; padding: 0; border: 0; min-width: 0; }
+  .mapping-table td::before { content: attr(data-label); display: block; color: var(--text-3); font-size: 11px; margin-bottom: 5px; }
+  .mapping-table td:last-child { grid-column: 1 / -1; }
+  .mapping-actions { justify-content: flex-end; border-top: 1px solid var(--line); padding-top: 10px; }
+  .mapping-table .detail-row { display: block; }
+  .mapping-table .detail-row td::before { display: none; }
+  .inline-test { padding: 16px; }
+  .table-wrap { overflow: hidden; }
+}
+@media (max-width: 560px) {
+  .app-header { flex-wrap: wrap; padding: 16px 20px; gap: 16px; }
+  .header-status { width: 100%; justify-content: space-between; }
+  .nav { padding: 0 20px; }
+  .content { padding: 24px 20px 40px; }
+  .page-head { gap: 12px; }
+  .nodes-table { min-width: 0; }
+}
+.page-description { margin-top: 6px; color: var(--text-2); font-size: 12px; line-height: 1.6; }

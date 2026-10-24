@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api } from './api'
+import { api, inWails } from './api'
 import type { NodeInfo, PublicState } from './api'
 import { StatusHeader } from './components/StatusHeader'
 import { Toasts, type Toast } from './components/Toasts'
@@ -141,9 +141,10 @@ function App() {
   }, [toast])
 
   return (
-    <div className="app">
+    <div className={`app ${inWails ? 'native' : ''}`}>
+      {inWails && <div className="window-drag" aria-hidden="true" />}
       <header className="app-header">
-        <div className="brand"><img src="/hermit.png" alt="" width={32} height={32} />Hermit</div>
+        <div className="brand"><img src="/hermit.png" alt="" width={44} height={44} /><div>Hermit<span className="brand-caption">固定端口 · 独立出口</span></div></div>
         <StatusHeader state={state} busy={busy} onSetEnabled={setEnabled} onRecover={() =>
           void perform('正在恢复变更前状态…', () => api.recover(), () => toast('已恢复到变更前状态。'))
         } />

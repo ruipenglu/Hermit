@@ -24,7 +24,7 @@ export interface Api {
 }
 
 // runtime 在浏览器中也会创建 _wails，使用原生注入的系统标记区分预览。
-const inWails = typeof window !== 'undefined' && System.IsMac()
+export const inWails = typeof window !== 'undefined' && System.IsMac()
 
 const realApi: Api = {
   version: () => AppService.Version(),

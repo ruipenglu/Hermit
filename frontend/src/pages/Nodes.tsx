@@ -9,7 +9,7 @@ export function NodesPage(props: { nodes: NodeInfo[]; error: string; busy: boole
   return (
     <>
       <div className="page-head">
-        <h1>活动节点</h1>
+        <div><h1>活动节点</h1><p className="page-description">来自 Clash 当前配置，选择节点即可绑定本地端口。</p></div>
         <button className="btn" onClick={props.onRefresh} disabled={props.busy}><Icon.Refresh />刷新</button>
       </div>
       <div className="list-toolbar">

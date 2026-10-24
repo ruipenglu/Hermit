@@ -30,7 +30,7 @@ export function MappingsPage(props: {
   return (
     <>
       <div className="page-head">
-        <h1>端口映射</h1>
+        <div><h1>端口映射</h1><p className="page-description">为本地端口指定固定节点，保持其他分流不变。</p></div>
         <button className="btn primary" onClick={() => props.onAdd()} disabled={props.busy || props.state.status === 'loading'}>
           <Icon.Plus />新增映射
         </button>
@@ -55,13 +55,13 @@ export function MappingsPage(props: {
                 return (
                   <Fragment key={mapping.id}>
                     <tr className={isExpanded ? 'selected' : ''}>
-                      <td><button className="port-copy" onClick={() => props.onCopy(mapping.port)} title="复制代理地址">
+                      <td data-label="本地端口"><button className="port-copy" onClick={() => props.onCopy(mapping.port)} title="复制代理地址">
                         <span className="mono">{mapping.port}</span><Icon.Copy />
                       </button><div className="cell-secondary mono">127.0.0.1</div></td>
-                      <td className="target-cell"><div className="truncate" title={mapping.target || '手动节点'}>{mapping.target || '手动节点'}</div>
+                      <td className="target-cell" data-label="目标节点"><div className="truncate" title={mapping.target || '手动节点'}>{mapping.target || '手动节点'}</div>
                         <div className="cell-secondary">{mapping.source === 'manual-uri' ? '分享链接' : '活动配置'}</div></td>
-                      <td><span className={`status-text ${status.tone}`}><span className="dot" />{status.label}</span></td>
-                      <td>{test ? (
+                      <td data-label="映射状态"><span className={`status-text ${status.tone}`}><span className="dot" />{status.label}</span></td>
+                      <td data-label="最近测试">{test ? (
                         <button className="test-toggle" aria-expanded={isExpanded} onClick={() => setExpanded(isExpanded ? null : mapping.id)}>
                           <TestStatusPill status={test.status} />
                           <span className="cell-secondary mono">{test.exitIp || '查看详情'}<span className="disclosure">{isExpanded ? '−' : '+'}</span></span>
@@ -87,7 +87,7 @@ export function MappingsPage(props: {
           </table>
         </div>
       )}
-      {mappings.length > 0 && <div className="table-foot">{mappings.length} 个映射<span>HTTP / SOCKS5</span></div>}
+      {mappings.length > 0 && <div className="table-foot">共 {mappings.length} 条映射</div>}
       {confirming && (
         <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) setConfirming(null) }}>
           <div className="modal small" role="dialog" aria-modal="true" aria-labelledby="delete-title" onKeyDown={(e) => { if (e.key === 'Escape') setConfirming(null) }}>
