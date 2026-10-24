@@ -23,8 +23,8 @@ export interface Api {
   copyText(text: string): Promise<void>
 }
 
-// runtime 在浏览器中也会创建 _wails，使用原生注入的系统标记区分预览。
-export const inWails = typeof window !== 'undefined' && System.IsMac()
+// 打包窗口使用 wails:；系统标记可能晚于模块初始化，不能仅依赖 IsMac。
+export const inWails = typeof window !== 'undefined' && (window.location.protocol === 'wails:' || System.IsMac())
 
 const realApi: Api = {
   version: () => AppService.Version(),
@@ -40,4 +40,4 @@ const realApi: Api = {
   copyText: (text) => Clipboard.SetText(text),
 }
 
-export const api: Api = inWails ? realApi : mockApi
+export const api: Api = !inWails && import.meta.env.DEV ? mockApi : realApi
