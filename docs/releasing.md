@@ -1,6 +1,6 @@
 # 维护与发布
 
-普通分支推送和 Pull Request 运行 CI。推送 `v0.0.1` 这样的版本标签，会自动测试、构建 macOS arm64 安装包，并创建同名 GitHub Release。版本由仓库中的应用版本决定，标签必须与它一致；普通提交不会自动增加版本号。
+仓库只保留 Release 工作流，普通分支推送和 Pull Request 不运行 CI，也没有定时任务或 Dependabot 自动更新。推送 `v0.0.1` 这样的版本标签，会自动测试、构建 macOS arm64 安装包，并创建同名 GitHub Release。版本由仓库中的应用版本决定，标签必须与它一致；普通提交不会自动增加版本号。
 
 ## 发布一个版本
 
@@ -63,8 +63,8 @@ RELEASE_TAG=v0.0.1 node scripts/prepare-release.mjs
 
 Hermit 自有代码保持 [MIT](../LICENSE) 授权。完整应用包含 Mihomo，按 GPLv3 组合程序要求分发；发布时保留许可与版权声明，并在同一 Release 提供对应源码。依赖收集脚本遇到缺失许可会失败，新增或升级依赖仍需人工核查其兼容性。React 上游源码固定版本及 SHA256，升级时同步更新 `scripts/collect-release-deps.mjs`。
 
-Wails Go 模块、CLI 和 npm runtime 需要同时更新。定期安全工作流和 Dependabot 辅助维护依赖；构建脚本不替代兼容性测试。
+Wails Go 模块、CLI 和 npm runtime 需要同时更新。依赖更新由维护者手动进行；必要检查仅在发布时运行，构建脚本不替代兼容性测试。
 
 当前包仅针对 Apple Silicon，最低构建目标为 macOS 13，使用临时签名，尚未经过 Developer ID 签名 / Apple 公证。真实 Clash 完整写入验收和其他平台支持范围见 [PLAN.md](../PLAN.md#未验收与已知限制)，发行说明会保留这些限制。
 
-GitHub 私密漏洞报告、Dependabot 安全更新和默认分支保护仍需维护者配置。本流程不修改这些仓库设置。
+GitHub 私密漏洞报告和默认分支保护由维护者按需配置。普通提交不设自动构建检查。

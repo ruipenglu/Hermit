@@ -57,7 +57,7 @@ git diff --check
 
 Go 使用 `gofmt`。测试新行为和重要边界，不用重复实现细节来凑数量。涉及原生 UI、数据兼容、配置写入或恢复的修改，要明确记录哪些场景做过验证、哪些没有。
 
-CI 在 PR 上执行前端检查、核心竞态测试和 macOS 打包。依赖安全检查单独运行，结果随漏洞数据库更新，不等于项目绝对安全。
+平时请在本地运行上述检查；普通推送和 PR 不触发 CI。自动检查与打包只在版本发布时执行，依赖扫描结果随漏洞数据库变化。
 
 ## 测试隔离
 
@@ -78,7 +78,7 @@ CI 在 PR 上执行前端检查、核心竞态测试和 macOS 打包。依赖安
 
 使用 `node scripts/set-version.mjs 0.0.1` 同步应用各处版本，并在 CHANGELOG 中添加对应章节。推送同版本的 `v*` 标签触发自动发布，具体流程见 [维护与发布](docs/releasing.md)。
 
-npm 使用锁文件和 `npm ci`；依赖升级提交 `package.json` 与 `package-lock.json`。不要把 Wails runtime 改回 `latest`。Dependabot 对 Wails 的自动升级已排除，需同时更新 Go、JS 和 CLI 并验证原生窗口。
+npm 使用锁文件和 `npm ci`；依赖升级提交 `package.json` 与 `package-lock.json`。不要把 Wails runtime 改回 `latest`。依赖由维护者手动更新；Wails 需同时更新 Go、JS 和 CLI 并验证原生窗口。
 
 仓库采取尊重、具体的讨论方式。请针对行为和代码提出反馈，不发布个人信息，不进行骚扰或人身攻击。漏洞报告走 [SECURITY.md](SECURITY.md)，不要先公开利用细节。
 
