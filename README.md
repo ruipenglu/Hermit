@@ -1,69 +1,104 @@
+<p align="center"><img src="assets/Hermit.png" width="112" alt="Hermit 海螺 Logo" /></p>
+
 # Hermit
 
-Clash Verge Rev 的固定代理端口管理器。将 `127.0.0.1:18080` 等本地端口绑定到明确节点，保留现有分流。
+**让一个本地端口，始终连接到你指定的代理节点。**
 
-应用使用 **Wails v3（Go + React + TypeScript）** 构建：Go 进程内实现全部核心逻辑（配置事务、加密、回滚、代理链测试），前端经 Wails 绑定调用，无本地 HTTP 服务、无子进程、无额外运行时依赖。
+Hermit 是面向 macOS 的 Clash Verge Rev 固定端口管理器。适合需要给不同应用、开发工具或测试环境分配独立出口的场景；原有规则分流继续由 Clash 管理。
 
-## 使用应用
+[English](README.en.md) · [开发指南](CONTRIBUTING.md) · [故障排查](docs/troubleshooting.md) · [安全与隐私](SECURITY.md)
 
-构建产物为 `bin/hermit.app`（`wails3 package` 生成，本地临时签名）。Clash Verge Rev 必须已安装、启动并加载有效配置。
+> **项目状态：早期开发。许可证尚未确定，当前不能视为已完成开源授权的项目。** 代码直接使用 GPLv3 的 Mihomo 组件，公开分发前必须明确项目授权和依赖义务，见 [依赖与许可证说明](THIRD_PARTY_NOTICES.md)。目前不提供已签名、公证的正式安装包。
 
-1. 在「端口映射」中点击「新增映射」，填写端口，选择当前活动节点或粘贴节点分享链接。
-2. 开启顶部总开关后，新增、编辑和删除映射会自动应用；总开关关闭时仅保存。关闭总开关会恢复原全局脚本并移除 Hermit 监听，保留映射，重新启用无需重填。
-3. 在浏览器或其他应用中设置 HTTP / SOCKS5 代理，如 `127.0.0.1:18080`；点击端口号旁的复制按钮，在菜单中选择 SOCKS5 或 HTTP 地址即可复制。映射支持按端口或节点名称搜索。
-4. 关闭总开关时，「保存」仅保留配置；「保存并测试」会开启总开关并应用所有已启用的映射。点击「测试」或「保存并测试」验证出口：在当前映射下展开出口 IP、耗时与实际代理链；点击最近测试结果可再次展开详情。
+![Hermit 界面，展示示例映射与地址复制菜单](docs/images/preview.png)
 
-已有旧版（Python/Swift 客户端）的映射、历史和钥匙串密钥继续使用，无需迁移。
+*截图使用虚构节点及文档示例 IP，不包含真实订阅或凭据。*
 
-## 架构与维护
+## 可以做什么
 
-| 位置 | 责任 |
+- **固定出口**：将 `127.0.0.1:18080` 等端口绑定到活动节点或手动分享链接。
+- **按需生效**：总开关开启时自动应用修改；关闭时恢复原脚本，保留映射。
+- **验证连接**：检查出口 IP、耗时及实际代理链，区分“可达”和“确实经过指定节点”。
+- **方便使用**：端口搜索、HTTP / SOCKS5 地址复制、行内测试、明暗主题与窄窗口布局。
+- **本地保护**：凭据与恢复快照加密，密钥保存在 macOS 钥匙串，变更支持事务回滚与中断恢复。
+
+Hermit 需要已运行的 Clash Verge Rev，不是独立代理内核，不替代订阅管理，也不提供代理节点。
+
+## 环境与兼容范围
+
+| 项目 | 当前范围 |
 | --- | --- |
-| `internal/core/` | 全部核心：存储与 Fernet 钥匙串、Clash 适配（Unix socket 控制接口）、VLESS 解析、脚本组合与 goja 安全求值、应用事务与回滚、出口探测 |
-| `internal/app/` | Wails 服务层：串行操作、保存自动应用、保存并测试等编排 |
-| `frontend/src/` | React UI：双标签导航、映射表格、节点列表、编辑弹窗与就地测试结果；浏览器自动切换 mock 便于界面自测 |
-| `build/` + `Taskfile.yml` | Wails 构建与打包配置（`wails3 build` / `wails3 package`） |
+| 平台 | macOS，Apple Silicon（arm64） |
+| 最低构建目标 | macOS 13；未对每个系统版本逐一验收 |
+| 已检查的组合 | Clash Verge Rev 2.5.8 / Mihomo v1.19.32；真实环境只读检查 |
+| 构建工具 | Go 1.27.3、Node.js 24、npm、Xcode Command Line Tools；完整 Xcode 用于重编 Icon Composer 资源 |
+| UI 框架 | Wails v3 beta.34、React、TypeScript |
+| 尚未验收 | Intel、Windows / Linux 客户端、其他 Clash 版本、真实环境完整启停 / 恢复、Developer ID 签名和公证 |
 
-操作串行执行，存储层保留跨进程锁，可与手动操作安全互斥。测试集中在 `internal/core/*_test.go`（61 项，含假 Clash 控制器与假内核的集成场景）。
+核心写入流程已有假 Clash 环境的自动化测试；这不等同于完成所有真实环境兼容测试。具体记录在 [PLAN.md](PLAN.md)。
 
-## 开发与打包
+## 从源码运行
 
-需要 Go 1.26+（`GOTOOLCHAIN=auto` 自动下载）、Node 24、wails3 CLI 与 Apple Silicon Mac。
+在安装好上述工具的 Mac 上执行：
 
 ```sh
+git clone https://github.com/ruipenglu/Hermit.git
+cd Hermit
+# 使用 nvm 时：nvm install && nvm use
 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.34
-wails3 build          # 构建二进制（含前端与绑定生成）
-wails3 package        # 产出 bin/hermit.app 并本地签名
-wails3 dev            # 开发模式（真实后端 + 前端热更新）
-go test ./...         # 核心测试
+export PATH="$(go env GOPATH)/bin:$PATH"
+wails3 package
+open bin/hermit.app
 ```
 
-环境变量 `HERMIT_DATA_DIR` / `HERMIT_CLASH_DIR` 可覆盖数据目录与 Clash 目录，用于隔离测试。
+打包流程按锁文件安装前端依赖、生成绑定、构建 `.app`，并进行本地临时签名。临时签名不等于 Apple 公证；不要为运行它而关闭系统整体安全保护。安装方法与构建排错见 [开发指南](CONTRIBUTING.md)。
 
-### 浏览器预览 UI（快速调试样式与交互）
+## 使用流程
 
-前端 API 层会检测运行环境：不在 Wails 窗口内（无注入的 IPC）时自动切换到 mock 实现，**不触碰真实 Clash 与本地数据**，所有页面、弹窗和操作（保存 / 测试 / 删除 / 开关 / 恢复）均可完整走查。
+1. 启动 Clash Verge Rev，加载有效配置。
+2. 点击「新增映射」，填写本地端口（1024–65535），选择活动节点或粘贴分享链接。
+3. 开启「端口映射总开关」。总开关关闭时，「保存」只保存配置；**「保存并测试」会开启总开关并应用所有已启用的映射**。
+4. 在目标应用中配置 `127.0.0.1` 和对应端口。点击端口旁的复制图标，可复制 `socks5://…` 或 `http://…` 地址。
+5. 点击「测试」检查实际出口。仅出口可达不代表指定节点已验证，请同时查看节点验证结果。
+
+支持 VLESS、VMess、Trojan、Shadowsocks、ShadowsocksR、Hysteria、Hysteria2、TUIC 分享链接。具体解析遵循内置的 Mihomo 转换器；不是把任意 HTTP URL 当成节点导入。
+
+## 数据与网络行为
+
+- 应用数据位于 `~/Library/Application Support/Hermit/`；目录权限 0700，文件 0600。
+- 手动节点 URI、脚本和配置恢复快照经 Fernet 加密。钥匙串密钥缺失时拒绝生成替代密钥覆盖原数据。
+- 控制 Clash 使用本地 Unix socket；启用映射会修改 Clash 的全局脚本并触发重载。
+- 连接测试通过指定代理访问 `https://api.ipify.org`。该服务会看到代理出口 IP。
+- 应用没有内置遥测或自动更新。节点名、端口和测试摘要仍可能是敏感信息，反馈问题前应脱敏。
+- 核心逻辑在 Go 进程内执行；系统集成会调用 `security`、`ps`、`plutil` 和 Mihomo 配置校验命令，不需要额外 Python 运行时。
+
+升级前的备份、停止使用及恢复方法见 [故障排查](docs/troubleshooting.md)。不要在映射仍启用时直接删除数据目录。
+
+## 开发与参与
 
 ```sh
+# 浏览器 UI 预览：只有开发模式使用示例数据，不访问真实 Clash
 cd frontend
-npm run dev                    # 默认 http://127.0.0.1:9245
-npx vite --port 5199           # 或指定端口
+npm ci
+npm run dev
+
+# 前端检查
+npm run typecheck
+npm test
+npm run build
+
+# 在仓库根目录运行核心检查（测试使用临时目录和假环境）
+cd ..
+go test -race ./internal/...
+go vet ./...
 ```
 
-- 改样式 / 组件后保存即热更新，无需重启；设计系统（配色、圆角、明暗主题）集中在 `frontend/src/styles.css` 的 CSS 变量里。
-- 想预览特定状态（如 degraded、待应用、恢复中），直接编辑 `frontend/src/api/mock.ts` 顶部的示例映射与状态开关，保存后刷新即可。
-- mock 操作带模拟延迟（保存约 0.6s、测试约 1.4s），测试结果随机产生 verified / mismatch / unconfirmed 三种状态，便于观察各样式分支。
-- 需要验证真实数据链路时再切回 `wails3 dev` 或打包应用。
+浏览器预览默认在 `http://127.0.0.1:9245/`。生产构建始终使用真实后端，不能用 `vite preview` 代替 mock 预览。`wails3 dev` 会运行真实后端，行为与纯浏览器预览不同。
 
-## 凭据与恢复
+提交问题前请搜索 [已有 Issues](https://github.com/ruipenglu/Hermit/issues)，按模板提供版本、复现步骤和脱敏信息。涉及凭据泄露或配置越权时，请先阅读 [安全报告流程](SECURITY.md)。
 
-- 数据保存在 `~/Library/Application Support/Hermit/`，目录 0700、文件 0600；手动 URI 和恢复快照经 Fernet 加密，密钥保存在 macOS 钥匙串。
-- 写入前组合原脚本、经安装的 Mihomo 内核校验，再建立加密事务日志；原子写入后重载并检查本地监听，保留手动策略组选择。操作失败自动回滚；中断后可通过顶部出现的恢复按钮一键恢复。
-- 原脚本、活动订阅或生成配置存在外部变更时拒绝覆盖；已存在加密数据但钥匙串密钥缺失时拒绝创建替代密钥。
-- 底层保留最近 100 条测试摘要，界面仅显示各映射的最近结果，不保存原始 URI；出口测试经指定端口访问 `api.ipify.org` 并按连接详情核验节点身份。
-
-## 兼容与验收边界
-
-已实测 Clash Verge Rev 2.5.8 + Mihomo v1.19.32。控制接口仅使用本地 Unix socket。活动节点排除策略组和内置 DIRECT / REJECT 等；手动 URI 解析直接复用 Mihomo 内核的分享链接转换器（`common/convert`，与订阅转换同一套代码），支持 VLESS / VMess / Trojan / Shadowsocks / ShadowsocksR / Hysteria / Hysteria2 / TUIC，链接备注自动作为节点显示名。
-
-本轮验证：核心单测与假环境集成测试、真实环境只读检查（doctor / nodes / 读取旧版真实数据）、浏览器 UI 走查、打包应用启动。真实 Clash 写入（启用/停用/测试）、Developer ID 签名与公证、Intel 构建不纳入本轮，详见 [PLAN.md](PLAN.md)。
+- [贡献说明](CONTRIBUTING.md)：环境、检查命令、PR 范围与测试隔离。
+- [架构说明](docs/architecture.md)：数据流、事务边界与模块职责。
+- [维护与发布](docs/releasing.md)：版本、构建、校验和及尚未完成的发布条件。
+- [变更记录](CHANGELOG.md)：尚未正式发布的改进。
+- [开发计划](PLAN.md)：当前方案、阶段验收及已知限制的唯一记录。

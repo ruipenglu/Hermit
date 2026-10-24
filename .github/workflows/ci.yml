@@ -25,6 +25,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --prefix frontend
       - run: node scripts/check-project.mjs
+      - run: node scripts/check-doc-links.mjs
       - run: npm run typecheck --prefix frontend
       - run: npm test --prefix frontend
       - run: npm run build --prefix frontend
