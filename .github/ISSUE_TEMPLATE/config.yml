@@ -1,5 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: 安全与隐私 / Security
-    url: https://github.com/ruipenglu/Hermit/blob/main/SECURITY.md
-    about: 不要公开提交凭据或漏洞利用细节；先查看报告流程。

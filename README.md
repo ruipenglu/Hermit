@@ -54,7 +54,7 @@ Hermit 是 macOS 上的 Clash Verge Rev 固定端口管理器。将本地端口�
 
 节点凭据和恢复快照在本地加密保存，密钥存放在 macOS 钥匙串。Hermit 没有内置遥测；连接测试会通过指定代理访问 `api.ipify.org`，以获取出口 IP。
 
-启用映射会修改 Clash 的全局脚本并重载配置，停用时恢复原脚本。升级或卸载前，请先关闭映射。详细的数据说明与报告渠道见 [安全与隐私](SECURITY.md)，遇到异常可查阅 [故障排查](docs/troubleshooting.md)。
+启用映射会修改 Clash 的全局脚本并重载配置，停用时恢复原脚本。升级或卸载前，请先关闭映射。数据默认保存在 `~/Library/Application Support/Hermit/`，遇到异常可查阅 [故障排查](docs/troubleshooting.md)。
 
 ## 反馈与参与
 

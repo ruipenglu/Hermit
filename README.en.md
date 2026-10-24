@@ -54,7 +54,7 @@ Supported node URI families: VLESS, VMess, Trojan, Shadowsocks, ShadowsocksR, Hy
 
 Node credentials and recovery snapshots are encrypted locally, with the key stored in macOS Keychain. Hermit has no built-in telemetry. Connection tests reach `api.ipify.org` through the selected proxy to retrieve the exit IP.
 
-Enabling mappings changes Clash's global script and reloads its configuration; switching off restores the original script. Disable mappings before upgrading or uninstalling. See [security and privacy](SECURITY.md) for details and reporting channels, or [troubleshooting](docs/troubleshooting.md) for help.
+Enabling mappings changes Clash's global script and reloads its configuration; switching off restores the original script. Disable mappings before upgrading or uninstalling. Data is stored in `~/Library/Application Support/Hermit/`. See [troubleshooting](docs/troubleshooting.md) for help.
 
 ## Feedback and contributions
 
