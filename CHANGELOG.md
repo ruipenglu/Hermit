@@ -1,8 +1,10 @@
 # Changelog
 
-本文件记录用户可见变化。尚未创建正式发行标签，不把开发阶段提交包装成已发布版本。
+本文件记录各版本的用户可见变化。
 
 ## Unreleased
+
+## 0.0.1 — 2026-10-24
 
 ### Added
 
@@ -23,7 +25,7 @@
 - Go 安全补丁基线更新到 1.27.3；开发示例模块不再进入生产包。
 - macOS 最低构建目标统一为 13；仍仅验证 Apple Silicon 开发环境。
 
-### Release blockers
+### Known limitations
 
-- 第三方许可材料与对应源码尚待整理；包含 Mihomo 的应用分发需遵守 GPLv3。
-- 真实 Clash 完整写入验收、Developer ID 签名和公证尚未完成。
+- 初始版本仅提供 Apple Silicon macOS 包，使用临时签名，尚未经过 Apple 公证。
+- 真实 Clash 完整写入验收尚未完成；核心写入路径由隔离测试覆盖。

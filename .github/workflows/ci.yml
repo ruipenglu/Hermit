@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -47,6 +47,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --prefix frontend
+      - run: npm run build --prefix frontend
       - name: Go formatting
         run: test -z "$(gofmt -l main.go internal)"
       - run: go test -race -coverprofile=coverage.out ./internal/...

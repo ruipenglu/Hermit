@@ -39,7 +39,7 @@ Search by port or node, use light or dark appearance, and work comfortably in a 
 
 ## Get started
 
-The current build targets **Apple Silicon Macs with a macOS 13 minimum**. Start Clash Verge Rev with a working configuration before using Hermit. A downloadable app has not been released yet; to try it now, follow the [source build guide](CONTRIBUTING.md#构建-macos-应用).
+The current build targets **Apple Silicon Macs with a macOS 13 minimum**. Start Clash Verge Rev with a working configuration before using Hermit. Download the Mac package from [Releases](https://github.com/ruipenglu/Hermit/releases), unzip it, and move Hermit.app to Applications. The app is ad-hoc signed and not Apple-notarized; you can also follow the [source build guide](CONTRIBUTING.md#构建-macos-应用).
 
 1. Open Hermit and add a mapping.
 2. Enter a local port, choose a node, and save.

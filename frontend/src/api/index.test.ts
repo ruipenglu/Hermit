@@ -1,3 +1,4 @@
+import packageInfo from '../../package.json'
 import { beforeEach, expect, it, vi } from 'vitest'
 
 const backend = vi.hoisted(() => ({ version: vi.fn(async () => 'native'), isMac: vi.fn(() => false) }))
@@ -22,6 +23,6 @@ it.each([
   backend.isMac.mockReturnValue(mac)
   const { api, inWails } = await import('./index')
   expect(inWails).toBe(protocol === 'wails:' || mac)
-  expect(await api.version()).toBe(native ? 'native' : '1.1.0 (mock)')
+  expect(await api.version()).toBe(native ? 'native' : `${packageInfo.version} (mock)`)
   expect(backend.version).toHaveBeenCalledTimes(native ? 1 : 0)
 })

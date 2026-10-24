@@ -39,7 +39,7 @@ Hermit 是 macOS 上的 Clash Verge Rev 固定端口管理器。将本地端口�
 
 ## 开始使用
 
-当前构建面向 **Apple Silicon Mac，最低系统目标为 macOS 13**。使用前，请启动 Clash Verge Rev 并加载可用配置。安装包尚未发布；提前体验可按 [源码构建指南](CONTRIBUTING.md#构建-macos-应用) 生成应用。
+当前构建面向 **Apple Silicon Mac，最低系统目标为 macOS 13**。使用前，请启动 Clash Verge Rev 并加载可用配置。从 [Releases](https://github.com/ruipenglu/Hermit/releases) 下载 Mac 安装包，解压后将 Hermit.app 拖入 Applications。当前安装包使用临时签名，尚未经过 Apple 公证；也可按 [源码构建指南](CONTRIBUTING.md#构建-macos-应用) 自行构建。
 
 1. 打开 Hermit，点击「新增映射」。
 2. 填写本地端口，选择节点，然后保存。

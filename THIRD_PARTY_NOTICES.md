@@ -17,6 +17,6 @@ Hermit 的自有代码、文档及维护者有权授权的素材采用根目录�
 
 实际版本以 `go.mod` / `go.sum` 和 `frontend/package-lock.json` 为准；开发、构建与间接依赖也需纳入正式分发审查。链接不是随包附带许可文本的替代品。
 
-`node scripts/dependency-inventory.mjs` 会在 `bin/release-metadata/` 生成版本清单，供维护者确认依赖范围；它不是完整的 SPDX SBOM 或法律审计报告。正式发布还需汇集适用的版权声明、许可证全文与对应源码，见 [发布流程](docs/releasing.md)。
+`node scripts/dependency-inventory.mjs` 会在 `bin/release-metadata/` 生成版本清单，供维护者确认依赖范围；它不是完整的 SPDX SBOM 或法律审计报告。发布脚本自动收集实际 Go 与生产 npm 依赖的许可全文和版权声明，写入应用包与源码包；Go vendor、生产 npm 包、Wails runtime TypeScript 和匹配的 React 上游源码随源码包提供。新增依赖仍需核查许可兼容性，见 [发布流程](docs/releasing.md)。
 
 Logo 由图像生成工具依据项目需求生成并由维护者选定，来源提示词记录在 `assets/README.md`；维护者有权授权的部分随项目采用 MIT，不代表已完成商标冲突检索。

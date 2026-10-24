@@ -1,4 +1,5 @@
 // 浏览器环境（无 Wails runtime）使用的 mock 实现，用于 UI 开发与自测。
+import packageInfo from '../../package.json'
 import type { Api, MappingDraft, PublicMapping, PublicState, TestRecord } from './index'
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -85,7 +86,7 @@ async function runTest(id: string): Promise<TestRecord> {
 }
 
 export const mockApi: Api = {
-  version: async () => '1.1.0 (mock)',
+  version: async () => `${packageInfo.version} (mock)`,
   status: async () => {
     await delay(200)
     return state()

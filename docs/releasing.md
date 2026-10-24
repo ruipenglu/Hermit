@@ -1,58 +1,68 @@
 # 维护与发布
 
-项目自有代码已采用 [MIT 许可证](../LICENSE)，第三方依赖的许可材料与正式分发准备仍需完成。脚本只准备本地候选文件，不创建 GitHub Release、不上传文件、不推送标签。阶段状态以 [PLAN.md](../PLAN.md) 为准。
+普通分支推送和 Pull Request 运行 CI。推送 `v0.0.1` 这样的版本标签，会自动测试、构建 macOS arm64 安装包，并创建同名 GitHub Release。版本由仓库中的应用版本决定，标签必须与它一致；普通提交不会自动增加版本号。
 
-## 首次发布前
+## 发布一个版本
 
-- 保留根 `LICENSE` 中的 MIT 授权与版权声明。包含 Mihomo 的完整应用仍须遵守 GPLv3，不能仅按 MIT 分发；具体边界见 [第三方说明](../THIRD_PARTY_NOTICES.md)。
-- 汇集实际分发依赖的版权声明和许可全文到根 `licenses/`，核查间接依赖。依据第三方许可要求准备完整对应源码、依赖源码、构建脚本及再分发说明；仅附 Hermit 的 Git 源码压缩包不能代替这项审查。
-- 在专用环境完成真实 Clash 的启用、停用、节点切换、更新、异常回滚与重启恢复验收。不要拿日常订阅做破坏性测试。
-- 决定 Developer ID 签名和 Apple 公证方案。当前构建只有临时签名，不能宣传为 Apple 已验证的安装包。
-- 明确已验收的 macOS / Clash 版本，以及未支持的架构。提交版本号不代表完成兼容测试。
+在干净工作区执行：
 
-## 仓库设置
+```sh
+node scripts/set-version.mjs 0.0.1
+```
 
-仓库内工作流无法代替 GitHub 设置。维护者需在远端核对：
+此命令同步 Go 应用、前端包及锁文件、构建配置和两个 macOS plist 的版本。开发预览从前端包读取版本。随后在 `CHANGELOG.md` 中添加 `## 0.0.1 — YYYY-MM-DD` 章节，写明变化及限制，完成检查后提交。
 
-- 启用私密漏洞报告，再更新 [安全文档](../SECURITY.md) 的渠道说明。
-- 启用 Dependabot 安全更新；当前已有定期版本更新配置。
-- 给默认分支配置保护规则，要求 PR 和 `Frontend checks`、`macOS build and core tests` 成功后合并。
-- 保留现有 secret scanning / push protection；使用最小权限的 Actions token。
-- 填写仓库简介和主题，正式发布后再添加准确的下载入口和状态徽章。
+```sh
+node scripts/check-project.mjs
+node scripts/check-doc-links.mjs
+git add <本次发布修改的文件>
+git commit -m "Release 0.0.1"
+git tag -a v0.0.1 -m "Hermit 0.0.1"
+git push --atomic origin main v0.0.1
+```
 
-这些设置未由本轮本地修改自动开启。不要在 CI 还未实际运行时写“CI 已通过”。
+替换命令中的示例版本和文件列表。不要移动已经公开发布的标签；修复已发布版本应使用新版本号。
 
-## 日常版本维护
+## 自动流程
 
-1. 在同一改动中更新 `internal/app/service.go` 的 `Version`、前端 `package.json` / 锁文件、`build/config.yml` 和两个 macOS plist 的版本。
-2. 执行 `node scripts/check-project.mjs` 检查一致性；将 `CHANGELOG.md` 的已验收条目整理到对应版本下。未发布内容保留在 Unreleased。
-3. 按 [贡献说明](../CONTRIBUTING.md) 完成本地检查和 CI，记录 `PLAN.md` 中的验收结果并提交。
-4. Wails Go 模块、CLI 和 npm runtime 作为一组更新。Dependabot 不单独升级 Wails；人工更新时重新生成绑定并运行完整检查。
-5. Go 使用 `go.mod` 指定的安全补丁基线；发现新的标准库安全公告后及时更新并重新打包。工作流每周执行依赖审查，也可手动触发。
+[Release 工作流](../.github/workflows/release.yml) 分为两个作业：
 
-GitHub Actions 固定到完整提交 SHA，版本注释便于阅读；Dependabot 可提出 Actions 更新。CI 只上传测试覆盖率，不上传应用包；加入 MIT 许可证不会自动开启发布。
+1. **构建与验证**：在 Apple Silicon macOS runner 上核对版本、文档、Go 格式，运行前端测试、Go 竞态测试、静态检查和依赖漏洞扫描；安装与 Go 模块一致的 Wails CLI，打包并校验生成文件无漂移。生成依赖许可与对应源码，将许可附在应用内部，然后重新进行临时签名和校验。
+2. **发布**：仅这个作业拥有 `contents: write` 权限。下载本次构建产物并验证 SHA256，创建草稿、上传全部附件，最后公开 Release。失败时不会发布缺少附件的正式版本；重试可继续未公开的草稿，已公开版本禁止覆盖。
 
-## 生成本地候选包
+所有操作必须成功才会进入发布。Actions 固定到完整提交 SHA；token 不交给应用构建步骤。同一个标签的发布任务顺序执行，不互相取消。
 
-许可证和依赖许可材料齐备、工作区已提交后，在 Apple Silicon Mac 上执行：
+## 下载文件
+
+每个版本提供：
+
+- `Hermit-版本-macos-arm64.zip`：Mac 应用，包含许可说明；解压后将 Hermit.app 拖入 Applications。
+- `Hermit-版本-source.tar.gz`：该提交的源码、构建文件、Go vendor 源码、生产 npm 包、Wails runtime TypeScript 源码及匹配的 React 上游源码。
+- `dependencies.json`：Go / npm 锁定版本、提交和工具链清单。
+- `RELEASE_NOTES.md`：从本版本变更记录生成的发行说明。
+- `SHA256SUMS`：附件完整性校验文件。
+
+下载附件到同一目录后，可执行 `shasum -a 256 -c SHA256SUMS` 检查完整性。
+
+## 本地验证与源码构建
+
+在 Apple Silicon Mac 上，安装贡献指南列出的工具后，使用已提交的干净工作区执行：
 
 ```sh
 export PATH="$(go env GOPATH)/bin:$PATH"
-node scripts/prepare-release.mjs
+RELEASE_TAG=v0.0.1 node scripts/prepare-release.mjs
 ```
 
-脚本在缺少 `LICENSE` 或 `licenses/` 时立即拒绝执行；它不会替维护者判断许可是否充分。随后执行元数据、文档、前端测试、Go 竞态测试、静态检查、依赖审查、打包与签名校验。所有步骤成功后在 `bin/release/Hermit-版本-提交/` 生成：
+输出位于 `bin/release/v0.0.1/`；本地脚本只生成文件，不上传。同名目录存在时拒绝覆盖，重试前先检查并移走旧目录。打包只读取受版本控制的源码和锁定依赖，不包含本地运行状态或用户配置。
 
-- macOS arm64 应用 ZIP，包含 README、许可材料和文档。
-- 当前提交的源码压缩包；不包含未跟踪文件、用户配置和本地状态。
-- `dependencies.json`：Go / npm 锁定版本与工具链清单，不宣称为完整 SPDX SBOM。
-- `SHA256SUMS`：用于下载完整性校验。
+下载的源码包可按 [贡献指南](../CONTRIBUTING.md#构建-macos-应用) 安装工具并运行 `wails3 package`。源包附带的 Go vendor 和前端依赖源码供核查及修改；常规构建会按锁文件安装开发工具和 npm 依赖，因此仍需联网。若修改附带 npm 依赖，先安装开发依赖，再应用修改并运行前端构建，避免 `npm ci` 覆盖修改。
 
-```sh
-cd bin/release/Hermit-版本-提交
-shasum -a 256 -c SHA256SUMS
-```
+## 许可证与维护
 
-同名输出目录已存在时脚本拒绝覆盖。需要重试时先检查旧文件并移动该目录。签名、公证或重新压缩都会改变哈希，最终发布文件确定后必须重新生成并验证校验和。
+Hermit 自有代码保持 [MIT](../LICENSE) 授权。完整应用包含 Mihomo，按 GPLv3 组合程序要求分发；发布时保留许可与版权声明，并在同一 Release 提供对应源码。依赖收集脚本遇到缺失许可会失败，新增或升级依赖仍需人工核查其兼容性。React 上游源码固定版本及 SHA256，升级时同步更新 `scripts/collect-release-deps.mjs`。
 
-正式发布前还要审查候选内容和依赖对应源码、核对版本标签与提交、在干净 Mac 上验收安装和启动。确认后由维护者建立版本标签和 Release，附上变更说明、支持范围、许可和安装说明。该步骤没有自动化执行，当前也未发布候选包。
+Wails Go 模块、CLI 和 npm runtime 需要同时更新。定期安全工作流和 Dependabot 辅助维护依赖；构建脚本不替代兼容性测试。
+
+当前包仅针对 Apple Silicon，最低构建目标为 macOS 13，使用临时签名，尚未经过 Developer ID 签名 / Apple 公证。真实 Clash 完整写入验收和其他平台支持范围见 [PLAN.md](../PLAN.md#未验收与已知限制)，发行说明会保留这些限制。
+
+GitHub 私密漏洞报告、Dependabot 安全更新和默认分支保护仍需维护者配置。本流程不修改这些仓库设置。

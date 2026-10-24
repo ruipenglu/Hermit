@@ -5,7 +5,7 @@ info:
   productIdentifier: "local.hermit.app"
   description: "Fixed local ports for explicit proxy nodes"
   copyright: "© 2026 Hermit contributors"
-  version: "1.1.0"
+  version: "0.0.1"
   cfBundleIconName: "appicon"
 
 dev_mode:

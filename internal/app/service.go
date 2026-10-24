@@ -11,7 +11,7 @@ import (
 )
 
 // Version 是应用版本号。
-const Version = "1.1.0"
+const Version = "0.0.1"
 
 // Service 是前端可调用的全部后端能力。
 type Service struct {

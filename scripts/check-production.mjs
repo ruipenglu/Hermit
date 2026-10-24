@@ -6,7 +6,7 @@ const scripts = readdirSync(dir).filter((file) => file.endsWith('.js'))
 assert.ok(scripts.length > 0, 'Build the frontend before checking it')
 for (const file of scripts) {
   const code = readFileSync(new URL(file, dir), 'utf8')
-  for (const marker of ['1.1.0 (mock)', 'test-reality-node', '日本 VLESS A']) {
+  for (const marker of [' (mock)', 'test-reality-node', '日本 VLESS A']) {
     assert.ok(!code.includes(marker), `Production bundle contains preview fixture: ${marker}`)
   }
 }
