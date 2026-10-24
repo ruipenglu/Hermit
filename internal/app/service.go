@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	core "github.com/lurp/hermit/internal/core"
+	core "github.com/ruipenglu/Hermit/internal/core"
 )
 
 // Version 是应用版本号。

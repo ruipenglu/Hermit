@@ -1,8 +1,8 @@
 // 前后端 API 适配层：Wails 内使用生成的绑定，浏览器（开发自测）使用 mock。
 import { Clipboard, System } from '@wailsio/runtime'
-import * as AppService from '../../bindings/github.com/lurp/hermit/internal/app/service.js'
-import type { PublicMapping, PublicState, TestRecord } from '../../bindings/github.com/lurp/hermit/internal/core/models'
-import type { MappingDraft, NodeInfo, SaveResult, SaveTestResult } from '../../bindings/github.com/lurp/hermit/internal/app/models'
+import * as AppService from '../../bindings/github.com/ruipenglu/Hermit/internal/app/service.js'
+import type { PublicMapping, PublicState, TestRecord } from '../../bindings/github.com/ruipenglu/Hermit/internal/core/models'
+import type { MappingDraft, NodeInfo, SaveResult, SaveTestResult } from '../../bindings/github.com/ruipenglu/Hermit/internal/app/models'
 import { mockApi } from './mock'
 
 export type { PublicMapping, PublicState, TestRecord, MappingDraft, NodeInfo, SaveResult, SaveTestResult }

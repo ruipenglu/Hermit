@@ -4,7 +4,7 @@ import (
 	"embed"
 	"log"
 
-	"github.com/lurp/hermit/internal/app"
+	"github.com/ruipenglu/Hermit/internal/app"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 

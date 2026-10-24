@@ -1,4 +1,4 @@
-module github.com/lurp/hermit
+module github.com/ruipenglu/Hermit
 
 go 1.26.0
 

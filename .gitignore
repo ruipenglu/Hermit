@@ -11,3 +11,17 @@ frontend/dist/*
 frontend/node_modules
 
 .DS_Store
+
+# Local credentials, user data and test reports
+.env
+.env.*
+!.env.example
+state.json
+journal.bin
+applied.bin
+original.bin
+*.pem
+*.key
+coverage.out
+frontend/coverage/
+frontend/test-results/
