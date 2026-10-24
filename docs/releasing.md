@@ -23,6 +23,8 @@ git push --atomic origin main v0.0.1
 
 替换命令中的示例版本和文件列表。不要移动已经公开发布的标签；修复已发布版本应使用新版本号。
 
+如果首次启用工作流时标签事件未触发，或需要补发尚未公开的版本，可以运行 `gh workflow run release.yml --ref main -f tag=v0.0.1`。也可在 Actions 的 Release 页面手动填写已有标签。此入口检出指定标签的源码，仍执行全部验证；不会修改原标签或覆盖已公开的 Release。
+
 ## 自动流程
 
 [Release 工作流](../.github/workflows/release.yml) 分为两个作业：
