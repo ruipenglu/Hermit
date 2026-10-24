@@ -1,10 +1,10 @@
 import type { TestRecord } from '../api'
 
 const statusPill: Record<string, { label: string; tone: string }> = {
-  verified: { label: '身份已确认', tone: 'green' },
-  mismatch: { label: '链路不符', tone: 'red' },
-  unconfirmed: { label: '未捕获链路', tone: 'amber' },
-  failed: { label: '连接失败', tone: 'gray' },
+  verified: { label: '节点已验证', tone: 'green' },
+  mismatch: { label: '出口节点不符', tone: 'red' },
+  unconfirmed: { label: '节点待确认', tone: 'amber' },
+  failed: { label: '连接失败', tone: 'red' },
 }
 
 export function TestStatusPill(props: { status: string }) {

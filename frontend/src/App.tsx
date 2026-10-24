@@ -19,6 +19,8 @@ function App() {
   const [state, setState] = useState<PublicState>(emptyState)
   const [nodes, setNodes] = useState<NodeInfo[]>([])
   const [nodesError, setNodesError] = useState('')
+  const [nodesLoading, setNodesLoading] = useState(true)
+  const refreshingNodes = useRef(false)
   const [busy, setBusy] = useState(false)
   const [activity, setActivity] = useState('')
   const [editor, setEditor] = useState<EditorDraft | null>(null)
@@ -40,13 +42,18 @@ function App() {
     } catch (error) {
       setState((s) => ({ ...s, status: 'unavailable', errors: [String(error)] }))
     }
-    if (!all) return
+    if (!all || refreshingNodes.current) return
+    refreshingNodes.current = true
+    setNodesLoading(true)
     try {
       setNodes(await api.nodes())
       setNodesError('')
     } catch (error) {
       setNodes([])
       setNodesError(String(error))
+    } finally {
+      refreshingNodes.current = false
+      setNodesLoading(false)
     }
   }, [])
 
@@ -112,11 +119,11 @@ function App() {
       enabled: draft.enabled,
     }
     const result = await perform(
-      testing ? '正在保存、应用并验证连接…' : '正在保存并自动应用…',
+      testing ? '正在保存、应用并验证连接…' : state.enabled ? '正在保存并自动应用…' : '正在保存映射…',
       () => testing ? api.saveAndTest(payload) : api.saveMapping(payload),
     )
     return result
-  }, [perform])
+  }, [perform, state.enabled])
 
   const setEnabled = useCallback((enabled: boolean) => {
     void perform(enabled ? '正在启用固定端口…' : '正在关闭并恢复原脚本…', () => api.setEnabled(enabled),
@@ -131,10 +138,10 @@ function App() {
     })
   }, [perform, toast])
 
-  const copyURL = useCallback(async (port: number) => {
+  const copyURL = useCallback(async (port: number, protocol: 'http' | 'socks5') => {
     try {
-      await api.copyText(`socks5://127.0.0.1:${port}`)
-      toast(`已复制 socks5://127.0.0.1:${port}`)
+      await api.copyText(`${protocol}://127.0.0.1:${port}`)
+      toast(`已复制 ${protocol}://127.0.0.1:${port}`)
     } catch (error) {
       toast(String(error), 'error')
     }
@@ -160,11 +167,12 @@ function App() {
           {(state.recoveryRequired || (state.errors ?? []).length > 0 || ['saved-pending-apply', 'degraded', 'unavailable', 'conflict'].includes(state.status)) && (
             <div className="notice-banner" role="alert">
               {state.recoveryRequired ? '上次操作未完成，请先恢复后继续。' : (state.errors ?? []).join('；') || {
-                'saved-pending-apply': '更改尚未生效，请重新启用端口映射。',
+                'saved-pending-apply': '更改已保存，应用后才会更新端口映射。',
                 degraded: '部分端口或节点与预期不一致，请检查映射。',
                 unavailable: '无法连接 Clash，请确认其正在运行。',
                 conflict: '全局脚本存在冲突，请使用原数据目录恢复。',
               }[state.status]}
+              {state.status === 'saved-pending-apply' && !state.recoveryRequired && <button className="btn compact" disabled={busy} onClick={() => setEnabled(true)}>应用更改</button>}
             </div>
           )}
           {page === 'mappings' && (
@@ -172,11 +180,11 @@ function App() {
               onDelete={(id) =>
                 void perform('正在删除并自动应用…', () => api.deleteMapping(id), () => toast('映射已删除。'))
               }
-              onTest={(id) => { void testMapping(id) }}
+              onTest={async (id) => { await testMapping(id) }}
               onCopy={copyURL} />
           )}
           {page === 'nodes' && (
-            <NodesPage nodes={nodes} error={nodesError} busy={busy} onBind={(name) => { setPage('mappings'); newMapping(name) }} onRefresh={() => void refresh()} />
+            <NodesPage nodes={nodes} error={nodesError} loading={nodesLoading} busy={busy} onBind={(name) => { setPage('mappings'); newMapping(name) }} onRefresh={() => void refresh()} />
           )}
         </div>
       </main>
@@ -185,6 +193,10 @@ function App() {
         <MappingEditor
           draft={editor}
           nodes={nodes}
+          nodesError={nodesError}
+          nodesLoading={nodesLoading}
+          mappings={state.mappings ?? []}
+          masterEnabled={state.enabled}
           busy={busy}
           hasCredential={editor.id ? (state.mappings ?? []).find((m) => m.id === editor.id)?.hasCredential ?? false : false}
           onCancel={() => setEditor(null)}

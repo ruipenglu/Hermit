@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { NodeInfo, SaveTestResult, TestRecord } from '../api'
+import type { NodeInfo, PublicMapping, SaveTestResult, TestRecord } from '../api'
 import { Icon } from '../icons'
 import { ChainView, TestSummary } from './TestViews'
 
@@ -16,6 +16,10 @@ export interface EditorDraft {
 interface EditorProps {
   draft: EditorDraft
   nodes: NodeInfo[]
+  nodesError: string
+  nodesLoading: boolean
+  mappings: PublicMapping[]
+  masterEnabled: boolean
   busy: boolean
   hasCredential: boolean
   onCancel: () => void
@@ -35,16 +39,16 @@ export function MappingEditor(props: EditorProps) {
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
-    modalRef.current?.focus()
+    modalRef.current?.querySelector<HTMLInputElement>('#mapping-port')?.focus()
     return () => previous?.focus()
   }, [])
 
   useEffect(() => {
-    if (test) {
+    if (test && !props.busy) {
       testRef.current?.focus()
       testRef.current?.scrollIntoView({ block: 'nearest' })
     }
-  }, [test])
+  }, [test, props.busy])
 
   const patch = (part: Partial<EditorDraft>) => {
     setDraft((current) => ({ ...current, ...part }))
@@ -56,7 +60,9 @@ export function MappingEditor(props: EditorProps) {
     return Number.isInteger(port) && port >= 1024 && port <= 65535
   }, [draft.port])
 
-  const canSave = portValid && !props.busy &&
+  const duplicatePort = props.mappings.some((m) => m.id !== draft.id && m.port === Number(draft.port))
+  const portError = !portValid ? '端口范围为 1024–65535' : duplicatePort ? '这个端口已有映射，请使用其他端口' : ''
+  const canSave = portValid && !duplicatePort && !props.busy &&
     (draft.source === 'manual-uri' || draft.target !== '') &&
     (draft.source === 'active-profile' || draft.uri !== '' || hasCredential)
 
@@ -99,73 +105,76 @@ export function MappingEditor(props: EditorProps) {
           </button>
         </div>
         <div className="modal-body">
-          <div className="field">
-            <label className="field-label" htmlFor="mapping-port">本地端口</label>
-            <div className="port-input"><span className="mono">127.0.0.1 :</span><input id="mapping-port" className="input mono" value={draft.port} inputMode="numeric" placeholder="18080"
-              onChange={(e) => patch({ port: e.target.value.replace(/[^\d]/g, '') })} aria-invalid={!!draft.port && !portValid} aria-describedby={draft.port && !portValid ? 'port-error' : undefined} /></div>
-            {draft.port && !portValid && <span className="field-hint error-text" id="port-error">端口范围为 1024–65535</span>}
-          </div>
-
-          <div className="field">
-            <label className="field-label">节点来源</label>
-            <div className="segmented">
-              <button className={draft.source === 'active-profile' ? 'active' : ''}
-                aria-pressed={draft.source === 'active-profile'}
-                onClick={() => patch({ source: 'active-profile' })}>活动节点</button>
-              <button className={draft.source === 'manual-uri' ? 'active' : ''}
-                aria-pressed={draft.source === 'manual-uri'}
-                onClick={() => patch({ source: 'manual-uri' })}>分享链接</button>
-            </div>
-          </div>
-
-          {draft.source === 'active-profile' ? (
+          <fieldset className="editor-fields" disabled={props.busy}>
             <div className="field">
-              <label className="field-label" htmlFor="node-search">目标节点</label>
-              <div className="search">
-                <Icon.Search />
-                <input id="node-search" className="input" placeholder="搜索节点…" value={nodeQuery}
-                  onChange={(e) => setNodeQuery(e.target.value)} />
-              </div>
-              <div className="node-options">
-                {filteredNodes.length === 0 && <div className="empty" style={{ padding: '18px' }}>没有匹配的节点</div>}
-                {filteredNodes.map((node) => (
-                  <button key={node.name} className={`node-option ${draft.target === node.name ? 'selected' : ''}`} aria-pressed={draft.target === node.name}
-                    onClick={() => patch({ target: node.name })}>
-                    <span className="selection-mark">{draft.target === node.name && <Icon.Check />}</span>
-                    <span className="name">{node.name}</span>
-                    <span className="protocol">{node.type}</span>
-                  </button>
-                ))}
-              </div>
-              {draft.target && <span className="field-hint">已选择：<b>{draft.target}</b></span>}
+              <label className="field-label" htmlFor="mapping-port">本地端口</label>
+              <div className="port-input"><span className="mono">127.0.0.1 :</span><input id="mapping-port" className="input mono" value={draft.port} inputMode="numeric" placeholder="18080"
+                onChange={(e) => patch({ port: e.target.value.replace(/[^\d]/g, '') })} aria-invalid={!!draft.port && !!portError} aria-describedby={draft.port && portError ? 'port-error' : undefined} /></div>
+              {draft.port && portError && <span className="field-hint error-text" id="port-error">{portError}</span>}
             </div>
-          ) : (
+
             <div className="field">
-              <div className="row"><label className="field-label" htmlFor="mapping-uri">分享链接</label>
-                <button className="text-btn" aria-pressed={draft.showURI} onClick={() => setDraft((c) => ({ ...c, showURI: !c.showURI }))}>{draft.showURI ? '隐藏' : '显示'}</button>
+              <label className="field-label">节点来源</label>
+              <div className="segmented">
+                <button className={draft.source === 'active-profile' ? 'active' : ''}
+                  aria-pressed={draft.source === 'active-profile'}
+                  onClick={() => patch({ source: 'active-profile' })}>活动节点</button>
+                <button className={draft.source === 'manual-uri' ? 'active' : ''}
+                  aria-pressed={draft.source === 'manual-uri'}
+                  onClick={() => patch({ source: 'manual-uri' })}>分享链接</button>
               </div>
-              {hasCredential && draft.uri === '' && (
-                <div className="field-hint" style={{ marginBottom: 6 }}>
-                  留空保留已保存的节点。
+            </div>
+
+            {draft.source === 'active-profile' ? (
+              <div className="field">
+                <label className="field-label" htmlFor="node-search">目标节点</label>
+                <div className="search">
+                  <Icon.Search />
+                  <input id="node-search" className="input" placeholder="搜索节点…" value={nodeQuery}
+                    onChange={(e) => setNodeQuery(e.target.value)} />
                 </div>
-              )}
-              <textarea id="mapping-uri" className={`textarea ${draft.showURI ? '' : 'masked'}`} spellCheck={false}
-                placeholder="vless://…、hy2://…、ss://…" value={draft.uri}
-                onChange={(e) => patch({ uri: e.target.value })} />
-              <span className="field-hint">凭据加密保存在本机。</span>
+                {props.nodesError && <span className="field-hint error-text">节点读取失败，可关闭弹窗后在活动节点页刷新，或改用分享链接。</span>}
+                <div className="node-options">
+                  {filteredNodes.length === 0 && <div className="empty" style={{ padding: '18px' }}>{props.nodesLoading ? '正在读取节点…' : nodeQuery ? '没有匹配的节点' : '暂无节点，请先在 Clash 中加载配置'}</div>}
+                  {filteredNodes.map((node) => (
+                    <button key={node.name} className={`node-option ${draft.target === node.name ? 'selected' : ''}`} aria-pressed={draft.target === node.name}
+                      onClick={() => patch({ target: node.name })}>
+                      <span className="selection-mark">{draft.target === node.name && <Icon.Check />}</span>
+                      <span className="name">{node.name}</span>
+                      <span className="protocol">{node.type}</span>
+                    </button>
+                  ))}
+                </div>
+                {draft.target && <span className="field-hint">已选择：<b>{draft.target}</b></span>}
+              </div>
+            ) : (
+              <div className="field">
+                <div className="row"><label className="field-label" htmlFor="mapping-uri">分享链接</label>
+                  <button className="text-btn" aria-pressed={draft.showURI} onClick={() => setDraft((c) => ({ ...c, showURI: !c.showURI }))}>{draft.showURI ? '隐藏' : '显示'}</button>
+                </div>
+                {hasCredential && draft.uri === '' && (
+                  <div className="field-hint" style={{ marginBottom: 6 }}>
+                    留空保留已保存的节点。
+                  </div>
+                )}
+                <textarea id="mapping-uri" className={`textarea ${draft.showURI ? '' : 'masked'}`} spellCheck={false}
+                  placeholder="vless://…、hy2://…、ss://…" value={draft.uri}
+                  onChange={(e) => patch({ uri: e.target.value })} />
+                <span className="field-hint">凭据加密保存在本机。</span>
+              </div>
+            )}
+
+            <div className="field">
+              <label className="row">
+                <span className="switch">
+                  <input type="checkbox" checked={draft.enabled} onChange={(e) => patch({ enabled: e.target.checked })} />
+                  <span className="switch-track" />
+                </span>
+                <span className="field-label" style={{ margin: 0 }}>启用此映射</span>
+              </label>
             </div>
-          )}
 
-          <div className="field">
-            <label className="row">
-              <span className="switch">
-                <input type="checkbox" checked={draft.enabled} onChange={(e) => patch({ enabled: e.target.checked })} />
-                <span className="switch-track" />
-              </span>
-              <span className="field-label" style={{ margin: 0 }}>启用此映射</span>
-            </label>
-          </div>
-
+          </fieldset>
           {test && (
             <div className="test-result" ref={testRef} tabIndex={-1} role="status" aria-label="连接测试结果">
               <TestSummary record={test} />
@@ -173,6 +182,7 @@ export function MappingEditor(props: EditorProps) {
             </div>
           )}
         </div>
+        <p className="save-explanation">{!draft.enabled ? '此映射将保持停用，可稍后编辑启用。' : props.masterEnabled ? '保存后立即应用到当前端口映射。' : '保存仅保留配置；保存并测试会开启总开关，应用所有已启用的映射。'}</p>
         <div className="modal-foot">
           <span className="tiny">{props.busy ? '正在处理，请稍候…' : '⌘↵ 保存'}</span>
           <div className="spacer" />
