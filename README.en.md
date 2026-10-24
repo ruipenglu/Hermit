@@ -1,73 +1,65 @@
-<p align="center"><img src="assets/Hermit.png" width="112" alt="Hermit shell logo" /></p>
+<p align="center">
+  <img src="assets/Hermit.png" width="112" alt="Hermit shell logo" />
+</p>
+<h1 align="center">Hermit</h1>
+<p align="center">A dedicated local proxy port for each app.</p>
+<p align="center">
+  <a href="README.md">简体中文</a> ·
+  <a href="#get-started">Get started</a> ·
+  <a href="docs/troubleshooting.md">Troubleshooting</a> ·
+  <a href="https://github.com/ruipenglu/Hermit/issues">Feedback</a>
+</p>
 
-# Hermit
+Hermit is a local proxy port manager for Clash Verge Rev on macOS. Bind a port to a specific node, then use that address in your app. Give browsers, command-line tools, and test environments their own proxy routes while keeping your existing Clash routing rules.
 
-**Bind a local proxy port to a specific node without replacing your existing routing rules.**
+![Hermit: manage port mappings, inspect node status, and copy proxy addresses](docs/images/preview.png)
 
-Hermit is a macOS companion for Clash Verge Rev. It is useful when different applications or development tools need separate, predictable proxy exits.
+<p align="center"><sub>The screenshot uses fictional nodes and example IP addresses.</sub></p>
 
-[简体中文](README.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+## One port, one chosen node
 
-> **Early development; project license undecided.** This repository is not yet a fully licensed open-source distribution. It directly includes GPLv3-covered Mihomo code. Project licensing and dependency obligations must be resolved before redistribution; see [third-party notices](THIRD_PARTY_NOTICES.md). No Developer ID signed or notarized release is currently provided.
+Give each app its own proxy address without repeatedly switching a shared proxy entry point. For example:
 
-![Hermit with fictional nodes and documentation-only IP addresses](docs/images/preview.png)
+| Use case | Local proxy address | Assigned node |
+| --- | --- | --- |
+| Browser | `127.0.0.1:18080` | Node A |
+| Command-line tools | `127.0.0.1:18081` | Node B |
+| Test environment | `127.0.0.1:18082` | Node C |
 
-## Features
+Each app needs to support manual HTTP or SOCKS5 proxy settings. Hermit manages port mappings; Clash Verge Rev manages your nodes and subscriptions.
 
-- Map local HTTP / SOCKS5 ports to active Clash nodes or imported node URIs.
-- Apply edits while enabled; restore the original script when disabled and retain mappings.
-- Verify exit IP, latency, and the actual proxy chain, not just connectivity.
-- Search mappings, copy proxy URLs, inspect inline results, and use light or dark appearance.
-- Encrypt credentials and recovery snapshots using a macOS Keychain key; recover interrupted transactions.
+## Everyday controls in one window
 
-Hermit requires Clash Verge Rev. It does not supply proxy servers, replace subscription management, or run an independent proxy kernel.
+- **Assign a node**: choose an active node or import a node URI, then give it a local port.
+- **Copy an address**: click a port, choose HTTP or SOCKS5, and paste the URL into your app.
+- **Check the route**: test a connection inline to see its exit IP, latency, and whether the actual proxy chain includes your chosen node.
+- **Control all mappings**: edits apply automatically while enabled. Switching off restores the original script and keeps your mappings for later.
 
-## Requirements and build
+Search by port or node, use light or dark appearance, and work comfortably in a small window.
 
-The current app target is Apple Silicon macOS, with a macOS 13 build minimum. Not every OS version has been tested. Read-only integration was checked with Clash Verge Rev 2.5.8 and Mihomo v1.19.32. Intel, other desktop platforms, full real-environment mutation tests, and Apple notarization remain unverified.
+## Get started
 
-Install Go 1.27.3, Node.js 24, npm, and Xcode Command Line Tools. Full Xcode is needed to regenerate Icon Composer assets.
+The current build targets **Apple Silicon Macs with a macOS 13 minimum**. Start Clash Verge Rev with a working configuration before using Hermit. A downloadable app has not been released yet; to try it now, follow the [source build guide](CONTRIBUTING.md#构建-macos-应用).
 
-```sh
-git clone https://github.com/ruipenglu/Hermit.git
-cd Hermit
-go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.34
-export PATH="$(go env GOPATH)/bin:$PATH"
-wails3 package
-open bin/hermit.app
-```
+1. Open Hermit and add a mapping.
+2. Enter a local port, choose a node, and save.
+3. Enable the mapping master switch, then click the port to copy its proxy address.
+4. Paste the address into your app's proxy settings and test the connection in Hermit.
 
-The build installs locked dependencies and signs locally. Ad-hoc signing is not notarization. Do not disable system-wide security controls to run the app.
+Saving while the master switch is off only stores the mapping. **Save and test turns on the master switch and applies all enabled mappings.**
 
-## Use
+Supported node URI families: VLESS, VMess, Trojan, Shadowsocks, ShadowsocksR, Hysteria, Hysteria2, and TUIC.
 
-1. Start Clash Verge Rev with a valid configuration.
-2. Add a local port (1024–65535) and choose an active node or paste a supported node URI.
-3. Enable the mapping master switch. Saving while disabled only stores configuration. **Save and test enables the master switch and applies every enabled mapping.**
-4. Configure the target application with `127.0.0.1` and the chosen port. The port's copy menu offers HTTP and SOCKS5 URLs.
-5. Test the connection and inspect node verification, exit IP and proxy chain.
+## Data and privacy
 
-Supported URI families: VLESS, VMess, Trojan, Shadowsocks, ShadowsocksR, Hysteria, Hysteria2 and TUIC, as parsed by the bundled Mihomo converter.
+Node credentials and recovery snapshots are encrypted locally, with the key stored in macOS Keychain. Hermit has no built-in telemetry. Connection tests reach `api.ipify.org` through the selected proxy to retrieve the exit IP.
 
-## Privacy and development
+Enabling mappings changes Clash's global script and reloads its configuration; switching off restores the original script. Disable mappings before upgrading or uninstalling. See [security and privacy](SECURITY.md) for details and reporting channels, or [troubleshooting](docs/troubleshooting.md) for help.
 
-Data is stored in `~/Library/Application Support/Hermit/`. Credentials and recovery snapshots are encrypted; their key is in Keychain. Node names, port numbers and recent test summaries can still be sensitive.
+## Feedback and contributions
 
-Clash control uses a local Unix socket. Enabling mappings changes Clash's global script and reloads configuration. A connection test reaches `https://api.ipify.org` through the selected proxy. There is no built-in telemetry or automatic updater. OS integration invokes standard macOS tools and the existing Mihomo configuration validator.
+Report problems and suggest improvements through [Issues](https://github.com/ruipenglu/Hermit/issues). Include your version, reproduction steps, and redacted screenshots. Never attach real subscriptions, credentials, or full configurations.
 
-```sh
-cd frontend
-npm ci
-npm run dev       # isolated browser preview at http://127.0.0.1:9245
-npm run typecheck
-npm test
-npm run build
-# return to repository root:
-cd ..
-go test -race ./internal/...
-go vet ./...
-```
+[Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Compatibility and validation](PLAN.md#未验收与已知限制)
 
-Only development browser sessions use mock data. Production builds and `wails3 dev` use the real backend. Do not delete application data while mappings are enabled; turn them off and preserve recovery data first.
-
-See [contributing](CONTRIBUTING.md), [architecture](docs/architecture.md), [troubleshooting](docs/troubleshooting.md), and [release preparation](docs/releasing.md). `PLAN.md` is the source of truth for implementation status and validation boundaries. Never attach real subscription URLs, credentials, state files or full Clash configurations to a public issue.
+The project license is undecided. See [third-party notices](THIRD_PARTY_NOTICES.md) for licensing and dependency details.

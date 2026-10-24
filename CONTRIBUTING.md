@@ -8,13 +8,33 @@
 - Xcode Command Line Tools：使用 Apple 官方方式安装；完整 Xcode 用于 Icon Composer。
 - Wails CLI、Go 模块与 `@wailsio/runtime` 必须同步到同一版本，当前为 `v3.0.0-beta.34`。
 
+## 构建 macOS 应用
+
+安装上述工具后，在终端执行：
+
 ```sh
+git clone https://github.com/ruipenglu/Hermit.git
+cd Hermit
+# 使用 nvm 时：nvm install && nvm use
 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-beta.34
 export PATH="$(go env GOPATH)/bin:$PATH"
+wails3 package
+open bin/hermit.app
+```
+
+打包流程按锁文件安装依赖、生成绑定并构建 `.app`。当前使用本地临时签名，尚未经过 Developer ID 签名或 Apple 公证。构建排错见 [故障排查](docs/troubleshooting.md)。
+
+## 浏览器开发预览
+
+在仓库根目录执行：
+
+```sh
 cd frontend
 npm ci
 npm run dev
 ```
+
+预览地址默认为 `http://127.0.0.1:9245/`。只有开发模式的浏览器预览使用 mock，不能用 `vite preview` 代替；`wails3 dev` 会运行真实后端。
 
 浏览器开发预览不会写入真实配置。前端单测和类型检查可在 Linux 上运行；完整客户端构建以 macOS 为准。不要修改生成绑定来修复业务问题：修改 Go 服务后运行 `wails3 generate bindings -clean=true -ts -i`，提交生成结果。
 
