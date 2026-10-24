@@ -1,6 +1,6 @@
 module github.com/ruipenglu/Hermit
 
-go 1.26.0
+go 1.27.3
 
 require (
 	github.com/dop251/goja v0.0.0-20261022125820-07c4b9d6265b

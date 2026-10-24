@@ -3,7 +3,6 @@ import { Clipboard, System } from '@wailsio/runtime'
 import * as AppService from '../../bindings/github.com/ruipenglu/Hermit/internal/app/service.js'
 import type { PublicMapping, PublicState, TestRecord } from '../../bindings/github.com/ruipenglu/Hermit/internal/core/models'
 import type { MappingDraft, NodeInfo, SaveResult, SaveTestResult } from '../../bindings/github.com/ruipenglu/Hermit/internal/app/models'
-import { mockApi } from './mock'
 
 export type { PublicMapping, PublicState, TestRecord, MappingDraft, NodeInfo, SaveResult, SaveTestResult }
 
@@ -40,4 +39,4 @@ const realApi: Api = {
   copyText: (text) => Clipboard.SetText(text),
 }
 
-export const api: Api = !inWails && import.meta.env.DEV ? mockApi : realApi
+export const api: Api = import.meta.env.DEV && !inWails ? (await import('./mock')).mockApi : realApi

@@ -23,10 +23,10 @@ func main() {
 		},
 	})
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:    "Hermit",
-		Width:    1040,
-		Height:   700,
-		MinWidth: 860,
+		Title:     "Hermit",
+		Width:     1040,
+		Height:    700,
+		MinWidth:  860,
 		MinHeight: 560,
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 52,
