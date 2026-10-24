@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('../', import.meta.url))
 const run = (command, args) => execFileSync(command, args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }).trim()
 const check = (command, args) => execFileSync(command, args, { cwd: root, stdio: 'inherit' })
-assert.ok(existsSync(join(root, 'LICENSE')), 'Release blocked: project license is not confirmed; add the maintainer-approved LICENSE first.')
+assert.ok(existsSync(join(root, 'LICENSE')), 'Release blocked: the project LICENSE is missing.')
 assert.ok(existsSync(join(root, 'licenses')) && readdirSync(join(root, 'licenses')).length > 0,
   'Release blocked: collect and review dependency license/copyright texts in licenses/ first.')
 assert.equal(process.platform, 'darwin', 'Build the macOS candidate on macOS')

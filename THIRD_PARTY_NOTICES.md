@@ -1,8 +1,8 @@
 # 第三方依赖与许可状态
 
-**Hermit 的根许可证尚未确定。** 本文件是依赖识别与发布准备说明，不为项目代码提供授权，也不代替每个依赖自身的许可文本。
+Hermit 的自有代码、文档及维护者有权授权的素材采用根目录的 [MIT 许可证](LICENSE)。第三方代码、生成代码中的第三方部分和依赖保留各自的版权与许可；MIT 不替代这些许可。
 
-当前 Go 代码直接导入 `github.com/metacubex/mihomo/common/convert`（v1.19.3）。该版本包含 [GNU GPL v3 许可](https://github.com/MetaCubeX/mihomo/blob/v1.19.3/LICENSE)。分发组合程序时必须处理相关源码与授权义务；不能仅添加 MIT 文件就认为覆盖了依赖。参考 [GNU 对链接组合程序的说明](https://www.gnu.org/licenses/gpl-faq.en.html#GPLStaticVsDynamic)。最终方案由维护者确认。
+当前 Go 代码直接导入 `github.com/metacubex/mihomo/common/convert`（v1.19.3）。该版本包含 [GNU GPL v3 许可](https://github.com/MetaCubeX/mihomo/blob/v1.19.3/LICENSE)。MIT 代码可用于 GPLv3 组合程序，但包含该组件的完整应用分发仍须遵守 GPLv3，包括对应源码与许可声明等要求，不能把完整应用标为仅受 MIT 约束。Hermit 自有代码的 MIT 授权保持有效。参考 [GNU 对链接组合程序的说明](https://www.gnu.org/licenses/gpl-faq.en.html#GPLStaticVsDynamic)。
 
 ## 直接运行依赖
 
@@ -19,4 +19,4 @@
 
 `node scripts/dependency-inventory.mjs` 会在 `bin/release-metadata/` 生成版本清单，供维护者确认依赖范围；它不是完整的 SPDX SBOM 或法律审计报告。正式发布还需汇集适用的版权声明、许可证全文与对应源码，见 [发布流程](docs/releasing.md)。
 
-Logo 由图像生成工具依据项目需求生成并由维护者选定，来源提示词记录在 `assets/README.md`；项目尚未为品牌素材另行授予授权，也未完成商标冲突检索。
+Logo 由图像生成工具依据项目需求生成并由维护者选定，来源提示词记录在 `assets/README.md`；维护者有权授权的部分随项目采用 MIT，不代表已完成商标冲突检索。

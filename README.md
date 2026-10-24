@@ -62,4 +62,4 @@ Hermit 是 macOS 上的 Clash Verge Rev 固定端口管理器。将本地端口�
 
 [变更记录](CHANGELOG.md) · [贡献指南](CONTRIBUTING.md) · [兼容性与验证记录](PLAN.md#未验收与已知限制)
 
-项目许可证尚未确定，相关授权与依赖信息见 [第三方依赖说明](THIRD_PARTY_NOTICES.md)。
+Hermit 自有代码采用 [MIT 许可证](LICENSE)。包含 Mihomo 的应用分发还需遵守 GPLv3，详见 [第三方依赖说明](THIRD_PARTY_NOTICES.md)。

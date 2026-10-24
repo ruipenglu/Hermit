@@ -18,11 +18,12 @@
 
 ### Changed
 
+- 项目自有代码采用 MIT 许可证，第三方依赖保留原有授权。
 - Go 模块路径与 GitHub 仓库对齐；Wails Go / JS 版本固定一致，依赖按锁文件安装。
 - Go 安全补丁基线更新到 1.27.3；开发示例模块不再进入生产包。
 - macOS 最低构建目标统一为 13；仍仅验证 Apple Silicon 开发环境。
 
 ### Release blockers
 
-- 项目许可证及第三方分发义务尚待确认。
+- 第三方许可材料与对应源码尚待整理；包含 Mihomo 的应用分发需遵守 GPLv3。
 - 真实 Clash 完整写入验收、Developer ID 签名和公证尚未完成。

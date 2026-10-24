@@ -62,4 +62,4 @@ Report problems and suggest improvements through [Issues](https://github.com/rui
 
 [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md) · [Compatibility and validation](PLAN.md#未验收与已知限制)
 
-The project license is undecided. See [third-party notices](THIRD_PARTY_NOTICES.md) for licensing and dependency details.
+Hermit's own code is licensed under [MIT](LICENSE). Distributing the app with Mihomo also requires compliance with GPLv3; see [third-party notices](THIRD_PARTY_NOTICES.md).
